@@ -1,0 +1,214 @@
+
+
+```{r}
+library(DiagrammeR)
+```
+
+
+1. Modify Figure 1.1 to include flow processes for immigration (people moving onto the island) and emigration (people leaving the island). Write down the difference equation for the People on the Island reservoir to incorporate these new flows.
+```{r}
+#Square resovoir with inflow labeled "birth" and outflow labeled "death"
+grViz("
+    digraph boxes_and_circles{
+    graph [overlap = true, fontsize = 10, rankdir = LR]
+    node [shape = circle,
+          fillcolor = lightblue]
+
+            Death []
+            Birth []
+            Immigration[]
+            Emigration[]
+
+    node [shape = square]
+            People [label = PeopleOnIsland]
+
+    #edge definitions with the node names
+    Birth -> People
+    People -> Death
+    Immigration -> People
+    People -> Emigration
+    }")
+
+#Difference equation for people on island
+#people(t + dt) = people(t) + {BirthFlow + ImmigrationFlow - DeathFlow - EmigrationFlow} * dt
+```
+
+
+
+2. Suppose you wish to build a model for a lake that is fed by one river and three smaller streams that drain a 200 square mile watershed. Your goal is to determine how the turbidity of the lake water will change during a lO0-year rainstorm (i.e., a rainstorm so severe that it is expected to occur only once every 100 years). Define two different reservoirs that you would use in a systems model. In addition, identify the flow processes that affect each reservoir. list the reservoirs and their flows and specify the units of each. Do not try to identify any converters or mathematical relationships. Draw a system diagram for each reservoir, similar to Figures 1.1 and 1.2.
+
+```{r}
+#Reservoirs
+#1. Lake
+#2. Watershed
+
+#Flows
+#1. Rainfall
+#2. Evaporation
+#3. Runoff
+#4. Infiltration
+#5. Streamflow
+#6. Groundwater flow
+#7. Sedimentation
+#8. Turbidity
+
+#Units
+#1. Lake - volume of water (m^3)
+#2. Watershed - area (m^2)
+#3. Rainfall - volume of water (m^3)
+#4. Evaporation - volume of water (m^3)
+#5. Runoff - volume of water (m^3)
+#6. Infiltration - volume of water (m^3)
+#7. Streamflow - volume of water (m^3)
+#8. Groundwater flow - volume of water (m^3)
+#9. Sedimentation - volume of water (m^3)
+#10. Turbidity - volume of water (m^3)
+
+#System Diagrams
+#Lake
+
+```
+
+
+3. Write down expressions or equations for the following quantities in Figure 1.5 and briefly justify your answers: (a) Renewal Rate (Le., you will need to specify a constant value), (b) Renewal, (c) Island Resources (you should specify the difference equation), and (d) Depletion.
+
+a) Renewal Rate = *constant value*
+justification: Renewal rate is the rate at which the island resources are renewed. This is a constant value because the rate at which the island resources are renewed does not change over time.
+b) Renewal = RenewalRate * IslandResources
+justification: Renewal is the product of the renewal rate and the island resources. This is because the renewal rate is the rate at which the island resources are renewed and the island resources are the amount of resources on the island.
+c) IslandResources(t + dt) = IslandResources(t) + Renewal - Depletion
+justification: The island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion. This is because the island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion.
+d) Depletion = DepletionRate * IslandResources
+justification: Depletion is the product of the depletion rate and the island resources. This is because the depletion rate is the rate at which the island resources are depleted and the island resources are the amount of resources on the island.
+
+
+4. Specify maximum and minimum values for the scales in Figure 1.6. Briefly explain the rationale for your choices. Note that there are no strictly right or wrong answers to this problem. There are, however, some reason- able and unreasonable answers.
+
+Maximum and minimum values for the scales in Figure 1.6:
+Maximum value for the x-axis: 600
+Minimum value for the x-axis: 0
+Maximum value for the y-axis: 1
+Minimum value for the y-axis: 0
+
+Rationale for choices: The maximum value for the x-axis is 600 because Island Resource is measured in the amount of resources required to sustain 1 person for one month and 600 resource units would be able to support 50 people for one year.
+The maximum value for the y-axis is 1 because the Birth rate represents the number of births per person per year and the maximum number of births per person per year is 1. The minimum value for the x-axis is 0 because the Island Resource cannot be negative. The minimum value for the y-axis is 0 because the Birth rate cannot be negative. The same reasoning applies to the Birth rate.
+
+5. Sketch a possible graph for defining how the Depletion Rate depends on the Island Resources in Figure 1.5. Make sure you specify the maximum and minimum values for the axes in the graph. Write a brief paragraph explaining the rationale for the shape of the graph and the scales of the axes.
+
+```{r}
+#Graph for defining how the Depletion Rate depends on the Island Resources in Figure 1.5
+#Rationale: Depletion rate would increase to a certain point then level off due to a cap on the number of people that can fit on the island
+#therefore the graph would be a curve that increases to a certain point then levels off. The minimum for the y axis is 0 because the depletion rate cannot be negative. The maximum for the y axis is 12 because the depletion rate represents the number of resource units lost to each person per year and the maximum number of resource units lost to each person per year is 12. The minimum for the x axis is 0 because the island resources cannot be negative. The maximum for the x axis is 500 because Island Resource is measured in the amount of resources required to sustain 1 person for one month.
+
+#Graph
+plot(0, 0, type = "n", xlim = c(0, 500), ylim = c(0, 12), xlab = "Island Resources", ylab = "Depletion Rate")
+curve(12/(1 + exp(-0.01 * x)), add = TRUE)
+
+#equation for graph is a logistic function with a = 12, b = 0.01, and c = 0
+#a is the maximum value of the graph (the maximum depletion rate)
+#b is the growth rate of the graph (the rate at which the depletion rate increases)
+#c is the x value of the sigmoid's midpoint (the point at which the depletion rate levels off)
+
+```
+Explananation:
+
+6. OpentheSTEllA~modelCHAPla.STMonyourCD-ROM.This model corresponds to the diagram in Figure 1.5. Assume that the Death Rate = 0.07. Complete the model by filling in the constants, equations, and graphs that you specified in Questions 3-5 (refer to the Appendix at the end of this chapter for an introduction to using STEllA~). In addition, document within STEllA~the units for each model entity. Make a graph showing the People on the Island and the Island Resources reservoirs over time. Run the model for 50 years, then write a brief paragraph explaining why the system behav- iors in the way shown in the graph.
+
+people(t + dt) = people(t) + (BirthFlow - DeathFlow) * dt
+(try with for loop, cumsum, lsoda)
+
+resources(t + dt) = resources(t) + (renewalFlow - depletionFlow) * dt
+
+birthRate = *constant*(store as input parameter)
+- same is true of all rates
+
+7. Consider the Global Warming phenomenon in Section 1.4.3. You will find here several descriptions of other system elements that affect the earth's temperature. For each description, create a diagram similar to Figure 1.9 showing the feedback loop that is indicated, then specify if the feedback is negative or positive.
+a. Plants consume CO2 through photosynthesis. High CO2 levels have been shown to increase plant growth. This will in turn lead to higher consumption of CO2 •
+
+```{r}
+#Diagram representing positive feedback loop
+grViz("
+digraph G {
+  rankdir=LR;
+  node [shape = circle];
+  PlantGrowth -> CO2;
+  CO2 -> PlantGrowth;
+}
+")
+```
+
+b. Increases in global temperatures, will lead to more evaporation of the ocean waters, thereby leading to an increased cloud cover over the earth's surface. This increased cloud cover will increase the earth's reflectivity (called the earth's albedo). This increase in albedo will reflect more sunlight away from the earth and allow the earth to "cool off."
+```{r}
+#Diagram representing negative feedback loop
+grViz("
+digraph G {
+  rankdir=LR;
+  node [shape = circle];
+  GlobalTemp -> Evaporation;
+  Evaporation -> CloudCover;
+  CloudCover -> Albedo;
+  Albedo -> GlobalTemp;
+}
+")
+
+```
+
+c. As global temperatures rise, the polar ice caps may begin to melt. This will increase the surface area of water on the earth and decrease the surface area of the ice caps. Because water is less reflective than ice, the earth's albedo will decrease, and more sunlight will be absorbed by the earth's surface. Temperatures will climb as this happens.
+```{r}
+#Diagram representing positive feedback loop
+grViz("
+digraph G {
+  rankdir=LR;
+  node [shape = circle];
+  GlobalTemp -> IceCaps;
+  IceCaps -> Albedo;
+  Albedo -> GlobalTemp;
+}
+")
+```
+
+d. Increased temperatures from higher atmospheric CO2 concentrations will cause more people to run their air conditioning units for longer periods of time. This increased demand for energy will necessitate the genera- tion of greater quantities of energy from fossil fuels. Burning fossil fuels pump CO2 into the atmosphere.
+```{r}
+#Diagram representing positive feedback loop
+grViz("
+digraph G {
+  rankdir=LR;
+  node [shape = circle];
+  GlobalTemp -> AirConditioning;
+  AirConditioning -> EnergyGeneration;
+  EnergyGeneration -> CO2;
+  CO2 -> GlobalTemp;
+}
+")
+```
+
+8. Consider the simple population model given in Figure 1.12. let P(t) stand for the number of people in the People reservoir; let Birth(t) stand for the value of the Birth process during year t (ie., Birth(t) = number of births in year t), and let Death(t) stand for the value of the Death process during year t. Assume that the People reservoir begins at time 0 with 20 people [P(O) = 20 people). Assume also that the Birth Rate is equal to 0.2 births/capita/year and the Death Rate is equal to 0.1 deaths/capita/year. Calculate the value of P(t) for t =0, 0.5, 1, 1.5, 2.5, 3, 3.5, and 4 years. The first two rows of Table 1.2 are filled in to show how the calculations are done. (Hint: Write down the difference equation for calculating P(t + dt) from P(t) and use this to fill in the values in the table. Note that year 0 refers to the first year of the simulation. Hence, the value of P(O) is equal to the initial value defined earlier. The values of Birth(O) and Death(O) are equal to the number of births and deaths, respectively, during the first year).
+
+```{r}
+#Table 1.2
+#Time(years)	P(t)	Birth(t)	Death(t)    P(t+dt)
+
+#define difference equation
+#P(t+dt) = P(t) + (Birth(t) - Death(t)) * dt
+P <- 20
+Birth <- 0.2
+Death <- 0.1
+dt <- 0.5
+
+#calculate P(t+dt) for t = 0, 0.5, 1, 1.5, 2.5, 3, 3.5, and 4 years
+people <- function (P, Birth, Death, dt) {
+  births <- Birth * P * dt
+  deaths <- Death * P * dt
+  return (P + (births - deaths))
+ 
+}
+
+result <- numeric(8)
+result[1] <- P
+for (i in 2:8) {
+  result[i] <- people(result[i-1], Birth, Death, dt)
+}
+result
+#plot the results
+plot(result, type = "l", xlab = "Time (years)", ylab = "People", xlim = c(1, 8))
+```
