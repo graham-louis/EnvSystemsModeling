@@ -77,7 +77,7 @@ justification: Renewal rate is the rate at which the island resources are renewe
 b) Renewal = RenewalRate * IslandResources
 justification: Renewal is the product of the renewal rate and the island resources. This is because the renewal rate is the rate at which the island resources are renewed and the island resources are the amount of resources on the island.
 c) IslandResources(t + dt) = IslandResources(t) + Renewal - Depletion
-justification: The island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion. This is because the island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion.
+justification: The island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion. 
 d) Depletion = DepletionRate * IslandResources
 justification: Depletion is the product of the depletion rate and the island resources. This is because the depletion rate is the rate at which the island resources are depleted and the island resources are the amount of resources on the island.
 
@@ -113,6 +113,7 @@ curve(12/(1 + exp(-0.01 * x)), add = TRUE)
 Explananation:
 
 6. OpentheSTEllA~modelCHAPla.STMonyourCD-ROM.This model corresponds to the diagram in Figure 1.5. Assume that the Death Rate = 0.07. Complete the model by filling in the constants, equations, and graphs that you specified in Questions 3-5 (refer to the Appendix at the end of this chapter for an introduction to using STEllA~). In addition, document within STEllA~the units for each model entity. Make a graph showing the People on the Island and the Island Resources reservoirs over time. Run the model for 50 years, then write a brief paragraph explaining why the system behav- iors in the way shown in the graph.
+
 
 people(t + dt) = people(t) + (BirthFlow - DeathFlow) * dt
 (try with for loop, cumsum, lsoda)
