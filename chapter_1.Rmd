@@ -7,10 +7,14 @@ library(DiagrammeR)
 
 1. Modify Figure 1.1 to include flow processes for immigration (people moving onto the island) and emigration (people leaving the island). Write down the difference equation for the People on the Island reservoir to incorporate these new flows.
 ```{r}
-#Square resovoir with inflow labeled "birth" and outflow labeled "death"
+#Square reservoir with inflow labeled "birth" and outflow labeled "death"
+#Use ghost nodes for flows
+#change points of arrow
+
 grViz("
     digraph boxes_and_circles{
     graph [overlap = true, fontsize = 10, rankdir = LR]
+    
     node [shape = circle,
           fillcolor = lightblue]
 
@@ -29,43 +33,59 @@ grViz("
     People -> Emigration
     }")
 
+    #Perhaps change to latex
 #Difference equation for people on island
 #people(t + dt) = people(t) + {BirthFlow + ImmigrationFlow - DeathFlow - EmigrationFlow} * dt
 ```
 
 
 
-2. Suppose you wish to build a model for a lake that is fed by one river and three smaller streams that drain a 200 square mile watershed. Your goal is to determine how the turbidity of the lake water will change during a lO0-year rainstorm (i.e., a rainstorm so severe that it is expected to occur only once every 100 years). Define two different reservoirs that you would use in a systems model. In addition, identify the flow processes that affect each reservoir. list the reservoirs and their flows and specify the units of each. Do not try to identify any converters or mathematical relationships. Draw a system diagram for each reservoir, similar to Figures 1.1 and 1.2.
+2. Suppose you wish to build a model for a lake that is fed by one river and three smaller streams that drain a 200 square mile watershed. Your goal is to determine how the turbidity of the lake water will change during a 100-year rainstorm (i.e., a rainstorm so severe that it is expected to occur only once every 100 years). Define two different reservoirs that you would use in a systems model. In addition, identify the flow processes that affect each reservoir. list the reservoirs and their flows and specify the units of each. Do not try to identify any converters or mathematical relationships. Draw a system diagram for each reservoir, similar to Figures 1.1 and 1.2.
 
 ```{r}
 #Reservoirs
 #1. Lake
-#2. Watershed
+#2. Sediment
 
 #Flows
 #1. Rainfall
-#2. Evaporation
-#3. Runoff
-#4. Infiltration
-#5. Streamflow
-#6. Groundwater flow
-#7. Sedimentation
-#8. Turbidity
+#2. River
+#3. Stream1
+#4. Stream2
+#5. Stream3
 
 #Units
-#1. Lake - volume of water (m^3)
+#1. Lake - Particle Load in the lake (g/L)
 #2. Watershed - area (m^2)
-#3. Rainfall - volume of water (m^3)
-#4. Evaporation - volume of water (m^3)
-#5. Runoff - volume of water (m^3)
-#6. Infiltration - volume of water (m^3)
-#7. Streamflow - volume of water (m^3)
-#8. Groundwater flow - volume of water (m^3)
-#9. Sedimentation - volume of water (m^3)
-#10. Turbidity - volume of water (m^3)
+#3. Rainfall - volume of water (mm/hr)
+#4. Streamflow - volume of water (m^3/hr)
+
+
 
 #System Diagrams
-#Lake
+#rainfall flows to streamflow
+#measurement as particle load and not fluid mass
+
+grViz("
+    digraph boxes_and_circles{
+    graph [overlap = true, fontsize = 10, rankdir = LR]
+    node [shape = circle,
+          fillcolor = lightblue]
+
+            Rainfall []
+            Streamflow []
+          
+
+    node [shape = square]
+            Lake [label = Lake]
+            Watershed [label = Watershed]
+
+    #edge definitions with the node names
+    Rainfall -> Lake
+    Streamflow -> Lake
+    RainFall-> Watershed
+    Lake -> Evaporation
+    }")
 
 ```
 
@@ -74,11 +94,11 @@ grViz("
 
 a) Renewal Rate = *constant value*
 justification: Renewal rate is the rate at which the island resources are renewed. This is a constant value because the rate at which the island resources are renewed does not change over time.
-b) Renewal = RenewalRate * IslandResources
+b) Renewal(t) = RenewalRate * IslandResources(t)
 justification: Renewal is the product of the renewal rate and the island resources. This is because the renewal rate is the rate at which the island resources are renewed and the island resources are the amount of resources on the island.
-c) IslandResources(t + dt) = IslandResources(t) + Renewal - Depletion
+c) IslandResources(t + dt) = IslandResources(t) + (Renewal - Depletion)dt
 justification: The island resources at time t + dt is equal to the island resources at time t plus the renewal minus the depletion. 
-d) Depletion = DepletionRate * IslandResources
+d) Depletion(t) = DepletionRate(t) * IslandResources(t) * PeopleOnIsland(t)
 justification: Depletion is the product of the depletion rate and the island resources. This is because the depletion rate is the rate at which the island resources are depleted and the island resources are the amount of resources on the island.
 
 
