@@ -15,22 +15,23 @@ grViz("
     digraph boxes_and_circles{
     graph [overlap = true, fontsize = 10, rankdir = LR]
     
-    node [shape = circle,
-          fillcolor = lightblue]
+    node [shape = circle, shape = point]
+          
+            out1 [label = \"\"]
+            in1 [label = \"\"]
+            in2[label = \"\"]
+            out2[label = \"\"]
 
-            Death []
-            Birth []
-            Immigration[]
-            Emigration[]
-
-    node [shape = square]
+    node [shape = square, style = fill]
             People [label = PeopleOnIsland]
 
     #edge definitions with the node names
-    Birth -> People
-    People -> Death
-    Immigration -> People
-    People -> Emigration
+    in1 -> People [label = 'birth', color = blue, fontcolor = blue]
+    People -> out1 [label = 'death', color = red, fontcolor = red]
+    in2 -> People [label = 'immigration', color = blue, fontcolor = blue]
+    People -> out2 [label = 'emigration', color = red, fontcolor = red]
+    
+
     }")
 
     #Perhaps change to latex
@@ -56,9 +57,8 @@ grViz("
 
 #Units
 #1. Lake - Particle Load in the lake (g/L)
-#2. Watershed - area (m^2)
 #3. Rainfall - volume of water (mm/hr)
-#4. Streamflow - volume of water (m^3/hr)
+#4. Streamflow - Mass of particles moving per hour (g/hr)
 
 
 
@@ -69,22 +69,23 @@ grViz("
 grViz("
     digraph boxes_and_circles{
     graph [overlap = true, fontsize = 10, rankdir = LR]
-    node [shape = circle,
-          fillcolor = lightblue]
-
-            Rainfall []
-            Streamflow []
+    node [shape = circle, style =invis]
+            out1 [label = \"\"]
+            in1 [label = \"\"]
+            
           
 
-    node [shape = square]
+    node [shape = square, style = fill]
             Lake [label = Lake]
             Watershed [label = Watershed]
 
     #edge definitions with the node names
-    Rainfall -> Lake
-    Streamflow -> Lake
-    RainFall-> Watershed
-    Lake -> Evaporation
+    
+    
+    in1-> Watershed [label = 'Rainfall']
+    Watershed -> Lake [label = 'Streamflow']
+    Lake -> out1 [label = 'Evaporation']
+    
     }")
 
 ```

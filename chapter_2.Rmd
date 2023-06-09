@@ -1,0 +1,195 @@
+---
+title: "chapter_2"
+output: html_document
+date: '2023-06-07'
+---
+
+```{r}
+library(deSolve)
+library(DiagrammeR)
+library(ggplot2)
+```
+
+1. Consider a new landfill in which solid waste is deposited at a rate of 25 metric tons/day. Draw a system diagram depicting this system. fill in constant values for each of the quantities in the system. Make a sketch showing the volume of waste in the landfill as a function of time. Write down the rate equation for the volume of waste in the landfill and specify the value of the rate constant.
+
+```{r}
+grViz("
+      digraph D{
+      graph [rankdir = LR]
+      node[shape = point]
+        wasteCollection[label = '']
+        
+      node[shape = rectangle]
+        landfill[label = 'landfill']
+        
+      wasteCollection -> landfill [label = 'dumptrucks', fontsize = 7, decorate = true]
+      }
+      ")
+
+waste_i <- 0
+deposite_rate <- 25
+t <- 0:10
+
+waste <- waste_i + deposite_rate * t
+data <- data.frame(Time = t, Waste = waste)
+
+ggplot(data, aes(x = Time, y = Waste)) + geom_line() + 
+  labs(x = 'Time (days)', y = 'Waste (metric tons)')
+```
+
+
+
+
+2. Define three systems in real life that will exhibit linear growth or decay. for each example, identify the following: (a) The reservoir that will exhibit this linear dynamic (specify its units); (b) All of the inflows and outflows(specify units); (c) Whether the system will typically exhibit linear growth or linear decay.
+    1. a) The amount of money in a savings account (units: dollars)
+       b) The amount of money deposited into the account and the amount of money withdrawn from the account (units: dollars/year)
+       c) Linear growth
+   2. a) Amount of gas in a car's gas tank (units: gallons)
+      b) Amount of gas used by the car (units: gallons/year)
+      c) Linear decay
+   3. a) Amount of water in a bathtub (units: gallons)
+      b) Amount of water flowing into the tub (units: gallons/minute)
+      c) Linear growth
+
+
+3. Assume that the reservoir in Figure 2.3 represents the mass of a particular pollutant in a lake at time t, where t is measured in years. Assume the initial pollutant mass in the lake is 1,000kg. SpeCify the units for each of the flow processes in this model.
+    1.  The units for the flow processes are kg/year
+
+4. You will find nine different sets of values for the flows in the Figure 2.3 listed in Table 2.8. For each case (a) Specify whether the resulting system will exhibit linear growth, linear decay, or neither(assume that time is measured in minutes); (b) If the system exhibits linear growth or decay, determine the value of the rate constant k and write down the equation (corresponding to equation (2.7)J for the reservoir value R(t) that is the solution to the rate equation in Table 2.3. Make sure you give numeric values for all quantities.
+
+a) Linear growth. k = 10. R(t) = R(t = 0) + 10t
+b) Linear decay. k = -5. R(t) = R(t = 0) - 5t
+c) Neither
+d) Linear growth. k = sin(t) R(t) = R(t + 0) + sin(t)*t
+e) Neither.
+f) Linear growth. k = 10. R(t) = R(t = 0) + 10t
+g) Linear decay. k = -10. R(t) = R(t = 0) - 10t
+h) Linear growth. k = 30. R(t) = 30t
+i) Linear growth. k = 30 + .25sin(t). R(t) = R(t = 0) + (30 + .25sin(t))*t
+
+
+Section 2.3
+5. Use R to construct the mouse population example system in Figure 2.6. Assume that the system starts with two mice. Try different values for the Birth Rate and Death Rate and run the model to see what effect they have on the system. Under what conditions does the mouse population increase over time? When does it decrease over time? When is the population at a steady state?
+
+```{r}
+mouse_population <- function(time, state, parameters) {
+  
+    # Calculate births and deaths
+    births <- parameters$birth_rate * state
+    deaths <- parameters$death_rate * state
+
+    # Define the population derivative
+    dpopulation <- births - deaths
+
+    # Return the population derivative
+    return(list(dpopulation))
+
+}
+
+# Set initial values and parameters
+initial_state <- c(population = 2)
+parameters <- list(birth_rate = 0.3, death_rate = 0.2)
+time <- 0:100
+
+# Simulate the population dynamics using lsoda
+solution <- lsoda(initial_state, time, mouse_population, parameters)
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(population) + 
+  geom_line(aes(x = time, y = population)) + 
+  labs(title = paste("Mouse Population Dynamics; Birth = ", parameters$birth_rate,
+                     "; Death = ", parameters$death_rate),
+       x = "Time (months)", y = "Mice Count")
+
+parameters <- list(birth_rate = 0.1, death_rate = 0.2)
+solution <- lsoda(initial_state, time, mouse_population, parameters)
+population <- as.data.frame(solution)
+
+ggplot(population) + 
+  geom_line(aes(x = time, y = population)) + 
+  labs(title = paste("Mouse Population Dynamics; Birth = ", parameters$birth_rate,
+                     "; Death = ", parameters$death_rate),
+       x = "Time (months)", y = "Mice Count")
+```
+
+6. Define three systems in real life that will exhibit exponential growth or decay. For each example, identify the following: (a) The reservoir that will exhibit this type of behavior (specify its units); (b) All of the inflows and outflows (specify units); (c) Whether the system will typically exhibit expo- nential growth or exponential decay.
+
+Population Growth:
+(a) Reservoir: Population (people)
+(b) Inflows: Births, immigration (people/year)
+Outflows: Deaths, emigration(people/year)
+(c) Exponential growth
+
+Radioactive Decay:
+(a) Reservoir: Quantity of radioactive substance (g)
+(b) Inflows: N/A
+Outflows: Radioactive decay (measured in decay events per unit of time)
+(c) Exponential decay
+
+Compound Interest:
+(a) Reservoir: Investment balance or principal amount (dollars)
+(b) Inflows: Interest earned (measured as a percentage of the principal)
+Outflows: N/A
+(c) Exponential growth
+
+7. Briefly describe what factor(s) you think would determine the value of the "flow rate" 
+converter in Figure 2.8.
+
+Factors: Mass of water pressing down (W/in^2), size of hole
+
+8. Explain why the feedback loop involving the reservoir and outflow process in Figure 2.9 is a counteracting feedback loop.
+
+
+9. Show mathematically that the solution to the exponential rate Equa- tion (2.10) is the expression given in Equation (2.11). [Hint: Take the deriv- ative of the expression in Equation (2.11) and show that it is equal to the right-hand side of Equation (2.10)).
+10. In STELlA~, modify the model in Figure 2.8 to include a constant water inflow of 10 cc/sec and do the following: (a) Write down the differ- ence equation for the water volume in the bucket; (b) Derive the rate equa- tion for the water volume in the bucket in this new system; (c) Will this new system behave in an exponential fashion? Under what conditions?
+11. Is it reasonable to assume that populations of people or other living organisms will exhibit exponential behavior indefinitely? Why or why not?
+12. Consider what happens whenever a 90°F can of soft drink is placed in a 38°F refrigerator. The can's temperature will immediately begin to drop and will rapidly approach the ambient temperature in the refrigerator. As the can's temperature gets closer to 38°F, however, the rate at which its tem- perature drops will decrease until (after a long time) the temperature of the can is virtually identical to the temperature inside the refrigerator. Do the following: (a) Sketch a graph of the can's temperature versus time; (b) Draw a system diagram for modeling the temperature of the can. Use a reservoir to represent the can's temperature. Note that the rate at which the can's tem- perature changes is proportional to the difference between the can's tem- perature and the ambient temperature in the refrigerator.
+
+Section 2.4
+13. Assume that the Reservoir in Figure 2.12 represents a population of people and that time is measured in years. Specify the units for all the system elements in Figure 2.12.
+14. Define three systems in real-life (other than those described in this chapter) that will exhibit logistic growth. For each example, identify the folloWing:
+• The reservoir that will exhibit this type of behavior (specify its units) • All of the inflows and outflows (specify units)
+15. Use STELLA@, to construct the logistic model Figure 2.12. Assume that the reservoir represents a population of people and that time is mea- sured in years. Run the model for 100 years with each of the following sets of values for Ro, the Unconstrained Growth Rate, and the Carrying Capac- ity. In each case, make a graph of the reservoir versus time and explain why the system behaves as it does. In addition, for each case, write down Equa- tion (2.17), giving numerical values for all the parameters in that expres- sion.
+• Ro =10, Unconstrained Growth Rate - 0.1, Carrying Capacity =1,000 • Ro =10, Unconstrained Growth Rate =0.5, Carrying Capacity =500
+• Ro =2,000, Unconstrained Growth Rate =0.1, Carrying Capacity =500 • Ro = 2,000, Unconstrained Growth Rate = 0.5, Carrying Capacity = 1,000
+16. Sketch a graph like Figure 2.13 showing what the system will behave like if the initial value of the reservoir is greater than the Carrying Capacity of the system. Make sure you show how the value of the Unconstrained Growth Rate will affect the shape of the graph.
+17. Identify and describe the feedback loops in Figure 2.12. Specify whether each is positive or negative feedback.
+18. Show that Equation (2.16) is the rate equation for the logistic system in Figure 2.12. [Hint: Begin with the difference equation in Equation (2.15). Then use an approach similar to what was used to derive the rate equation for the exponential system, Equation (2.10)].
+19. In the logistics model described in Section 2.4, we assumed that the "death" rate would increase and the birth rate would remain constant as the population approached the Carrying Capacity of the system. In more advanced cultures, however, people may adopt a more proactive approach before resources are seriously depleted. In this scenario, individuals in the population may choose to have fewer children, thereby reducing the overall birth rate. In this case, the birth rate will decrease over time and the death rate will remain constant. The growth should again level off as the popula- tion approaches the Carrying Capacity. Create a systems model in STELLA@, to match this scenario. Make sure you specify all the equations and units for calculating the system quantities specify number using for the initial size of the population, the carrying capacity and any other values necessary to run the model. Include a graph that shows the Population and Resource reservoirs over time. Derive the rate equation for the system. This equation should be similar to (but not exactly the same) as Equation (2.15). Run the model for 50 years.
+Section 2.5
+20. Assume that the Resource reservoir in Figure 2.15 is measured in generic "resource units." In addition, assume that time is measured in years. What are the units for the Consumption flow process?
+21. Assume that in Figure 2.15 the initial value of Resource is 10,000 units, the initial value of Population is 10 people, the birth rate is 0.50 births per capita per year, and each person consumes two resource units per year. Use these values and Figure 2.15 to construct the overshoot and collapse model in STELLA·. Make a graph showing the Population and Resource reservoirs over time. Run the model for 50 years.
+a.
+b.
+c. d.
+Decrease the Birth Rate to 0.1 and rerun the model. Make sure you run long enough for the system to stablize. What differences do you see from the case in which the Birth Rate is 0.5? Make sure you pay attention to the scale on the vertical axis of the graph! Can you explain why the system's behavior changes in this way?
+Change the Birth Rate back to 0.50 and change the Consumption Rate to 20 units/person/year. Rerun the model and compare the results with the original case. Can you explain why the system's behavior changes in the ways that it does?
+Summarize what you have learned from these experiments with the model. What conditions lead to more rapid collapse of the system?
+See if you can identify values for the Birth Rate and Consumption Rate that will not lead to a total collapse of the Population for the preceding exercise. Can this be done? If so, how? Why is this the case?
+22. The expression used for the Per Capita Death Rate in Figure 2.15 is
+D = 1 - R(t). Under this formulation, the Death Rate will eventually reach levels that are very close to 100%. It may be the case, however, that the Population is not completely dependent on the Resource for survival. When- ever this is so, then the Death Rate may not approach 100% as the Resource is depleted. Suppose that the Death Rate D will reach only 60% as R(t) approaches zero. How could you modify the expression for D to accom- modate this fact? Incorporate this modification into the model correspond- ing to Figure 2.15 and then run the model with the original values for the Birth Rate, Population, and Resource, given in Exercise 21. How does the system behave? Can you explain why?
+23. Define three systems in real life (other than the 011 consumption example described in this section) that can exhibit overshoot and collapse behavior. Make sure that you sketch a system diagram for each case. Clearly identify all reservoirs, flows, and converters by giving them descriptive names. Clearly define the units for each quantity in the system.
+24. Some systems involve a Resource that can be replenished. For example, the Resource might represent a food supply that is renewable through agricultural methods or natural growth. Modify your STELLA@ model of the original system described in Exercise 21 so that the Resource can be renewed via a Renewal flow process. Assume that the Renewal inflow is proportional to the size of the Resource (as in an exponential model). Also assume that a converter called the Renewal Rate represents the proportionality constant. Set the Renewal Rate constant to be equal to 0.05. How does the behavior of this new system compare with the behav- ior of the original system? Can you explain why?
+Section 2.6
+25. Assume that time is measured in hours in Figure 2.19, that the Con- sumer reservoir is expressed as a number of organisms, and that the Resource reservoir is expressed as the number of generic resource units. Specify the units for all the other quantities in the model.
+26. Use STELLA@ to build the model in Figure 2.19. Populate the model with the values specified later. Make a graph shOWing both the Consumer and the Resource reservoirs over time. Run the model for 25 years, and answer the following questions. The graph of the Consumer and Resource reservoirs should exhibit simple oscillatory behavior. [Note: The oscillatory model has a complicated enough behavior that we must take special care to avoid serious round-off errors in STELLA@. This is done by using a very small time step and by using a more sophisticated numerical algorithm. You can make these changes by selecting Time Specs under the Run menu. The value of DT specifies the time step. Change DT to 0.0625 hours. In addi- tion, instruct STELLA@ to use the Runge-Kutta 2 method of integration in the Time Specs window of STELLA@.j
+G=1 D=20 Q=1 W=15 4=10 Ro=15
+a.
+b. c.
+d. e. f. g.
+What are the equilibrium values for the Consumer and Resource reser- voirs? Note that the equilibrium values are those midpoint values around which each reservoir oscillates.
+What is the period of this system? (A period is the length of time it takes for the system to complete one full cycle).
+When is the first time that the Consumer reservoir reaches its equilib- rium value in the simulation run? Where is the Resource reservoir in rela- tionship to its equilibrium value during this same time? How does the level of the Resource affect the behavior of the Consumer from this point in time until the Consumer next reaches its equilibrium?
+Do the Consumer and the Resource ever achieve equilibrium at the same time? What do you think would happen if they did?
+Change the value of W to 20 and re-run the model. What has changed? What explanation can you give?
+Change W back to 15 and then change the value of G to 0.5 and re-run the model. What has changed? What explanation can you give?
+Now change G back to 1. Set the starting value of C(t) and R(t) to be 4 =15 and Ro =20. Run the model. Can you explain why the system behaves this way?
+27. Imagine that you are a wildlife manager, responsible for keeping the population of a certain deer species as close to equilibrium as possible. Suppose that the only predators in your system are a population of wolves. How might knowledge of the steady-state behavior of this system aid you in your job? What would you do to try and maintain the deer population to a level as close to steady state as possible?
+Model Building Exercise
+28. Construct a system model in STELLA· that describes the relationships between the oil supply and the population of fossil fuel-burning vehicles. Your model should include at least three reservoirs: (1) the fossil fuel vehicles, (2) the supply of processed oil that is ready for consumption, and (3) the underground reserves of crude oil. Your model should include at least one feedback loop. Include flow processes for the production and obsolescence of vehicles and for the production and consumption of processed oil. Specify all interrelationships and equations or graphical relationships that are necessary in order for the model to run (apart from the values of constants). Provide descriptions within STELLA@ of each of the system components. Specify their units. Prepare a brief (one- or two-page) write-up describing your system and giving the rationale for the system diagram. Include a copy of the system diagram and a graph of the model output as part of the write-up. Answer the following questions:
+
+a. Describe the feedback loops in your system. Are they examples of pos- itive or negative feedback?
+b. Which types of behavior patterns will your model exhibit (linear, expo- nential, logistic, overshoot and collapse, or a combination)? Under what conditions will the type of behavior you identified occur? Briefly justify your answer.
