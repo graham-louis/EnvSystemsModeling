@@ -15,8 +15,8 @@ library(ggplot2)
 ```{r}
 grViz("
       digraph D{
-      graph [rankdir = LR]
-      node[shape = point]
+      graph [rankdir = LR] 
+      node[shape = point] 
         wasteCollection[label = '']
         
       node[shape = rectangle]
@@ -26,11 +26,11 @@ grViz("
       }
       ")
 
-waste_i <- 0
-deposite_rate <- 25
-t <- 0:10
+waste_i <- 0 # initial conditions
+deposite_rate <- 25 #rate constant
+t <- 0:10 # time
 
-waste <- waste_i + deposite_rate * t
+waste <- waste_i + deposite_rate * t 
 data <- data.frame(Time = t, Waste = waste)
 
 ggplot(data, aes(x = Time, y = Waste)) + geom_line() + 
@@ -88,7 +88,7 @@ mouse_population <- function(time, state, parameters) {
 
 # Set initial values and parameters
 initial_state <- c(population = 2)
-parameters <- list(birth_rate = 0.3, death_rate = 0.2)
+parameters <- list(birth_rate = 0.3, death_rate = 0.2) #exponential growth
 time <- 0:100
 
 # Simulate the population dynamics using lsoda
@@ -104,7 +104,17 @@ ggplot(population) +
                      "; Death = ", parameters$death_rate),
        x = "Time (months)", y = "Mice Count")
 
-parameters <- list(birth_rate = 0.1, death_rate = 0.2)
+parameters <- list(birth_rate = 0.1, death_rate = 0.2) #exponential decay
+solution <- lsoda(initial_state, time, mouse_population, parameters)
+population <- as.data.frame(solution)
+
+ggplot(population) + 
+  geom_line(aes(x = time, y = population)) + 
+  labs(title = paste("Mouse Population Dynamics; Birth = ", parameters$birth_rate,
+                     "; Death = ", parameters$death_rate),
+       x = "Time (months)", y = "Mice Count")
+
+parameters <- list(birth_rate = 0.2, death_rate = 0.2) #steady state
 solution <- lsoda(initial_state, time, mouse_population, parameters)
 population <- as.data.frame(solution)
 
@@ -142,54 +152,771 @@ Factors: Mass of water pressing down (W/in^2), size of hole
 
 8. Explain why the feedback loop involving the reservoir and outflow process in Figure 2.9 is a counteracting feedback loop.
 
+Figure 2.9 is a counteracting feedback loop because the outflow rate is dependent on the size of the the reservoir, R(t), and grows as the reservoir grows.
 
-9. Show mathematically that the solution to the exponential rate Equa- tion (2.10) is the expression given in Equation (2.11). [Hint: Take the deriv- ative of the expression in Equation (2.11) and show that it is equal to the right-hand side of Equation (2.10)).
-10. In STELlA~, modify the model in Figure 2.8 to include a constant water inflow of 10 cc/sec and do the following: (a) Write down the differ- ence equation for the water volume in the bucket; (b) Derive the rate equa- tion for the water volume in the bucket in this new system; (c) Will this new system behave in an exponential fashion? Under what conditions?
+9. Show mathematically that the solution to the exponential rate Equation (2.10) is the expression given in Equation (2.11). [Hint: Take the derivative of the expression in Equation (2.11) and show that it is equal to the right-hand side of Equation (2.10)).
+
+R(t) = R_i * e ^(kt)
+
+R'(t) = R_i * e^(kt) * k
+
+R'(t) = R(t) * k
+
+10. Modify the model in Figure 2.8 to include a constant water inflow of 10 cc/sec and do the following: (a) Write down the difference equation for the water volume in the bucket; (b) Derive the rate equation for the water volume in the bucket in this new system; (c) Will this new system behave in an exponential fashion? Under what conditions?
+
+(a) Difference equation: R(t + dt) = R(t) + (10 - R(t) * 0.1)*dt
+(b) Rate equation: dR/dt = 10 - R(t) * 0.1
+(c) This new system will behave in an exponential fashion if the initial state allows for net decay.
+
+```{r}
+grViz("
+      digraph WaterBucket{
+      graph [rankdir = LR]
+      node [shape = point]
+        outFlow[label = '']
+        inFlow[label = '']
+        
+      node[shape = rectangle]
+        water[label = 'Water volume']
+        
+      
+      water -> outFlow[label = 'Outflow = Water volume * Flow Rate']
+      inFlow -> water[label = 'Inflow = 10 cc/sec']  
+      
+      } 
+     ")
+```
+
+
 11. Is it reasonable to assume that populations of people or other living organisms will exhibit exponential behavior indefinitely? Why or why not?
-12. Consider what happens whenever a 90°F can of soft drink is placed in a 38°F refrigerator. The can's temperature will immediately begin to drop and will rapidly approach the ambient temperature in the refrigerator. As the can's temperature gets closer to 38°F, however, the rate at which its tem- perature drops will decrease until (after a long time) the temperature of the can is virtually identical to the temperature inside the refrigerator. Do the following: (a) Sketch a graph of the can's temperature versus time; (b) Draw a system diagram for modeling the temperature of the can. Use a reservoir to represent the can's temperature. Note that the rate at which the can's tem- perature changes is proportional to the difference between the can's tem- perature and the ambient temperature in the refrigerator.
+
+No, because there are limits to the amount of resources available to support a population.
+
+12. Consider what happens whenever a 90°F can of soft drink is placed in a 38°F refrigerator. The can's temperature will immediately begin to drop and will rapidly approach the ambient temperature in the refrigerator. As the can's temperature gets closer to 38°F, however, the rate at which its temperature drops will decrease until (after a long time) the temperature of the can is virtually identical to the temperature inside the refrigerator. Do the following: (a) Sketch a graph of the can's temperature versus time; (b) Draw a system diagram for modeling the temperature of the can. Use a reservoir to represent the can's temperature. Note that the rate at which the can's tem- perature changes is proportional to the difference between the can's temperature and the ambient temperature in the refrigerator.
+
+```{r}
+can_temp <- function(time, state, parameters) {
+
+    # Calculate the rate of change of the can's temperature
+    dtemp <- (parameters$ambient_temp - state)
+
+    # Return the rate of change of the can's temperature
+    return(list(dtemp))
+
+}
+
+# Set initial values and parameters
+initial_state <- c(temperature = 90)
+parameters <- list(rate_constant = 0.1, ambient_temp = 38)
+
+# Set up the time vector
+time <- 0:100
+
+# Simulate the can's temperature dynamics using lsoda
+solution <- lsoda(initial_state, time, can_temp, parameters)
+
+# Extract the temperature values from the solution
+temperature <- as.data.frame(solution)
+
+# Plot the can's temperature dynamics
+
+ggplot(temperature) +
+  geom_line(aes(x = time, y = temperature)) +
+  labs(title = paste("Can Temperature Dynamics; Ambient Temperature = ", parameters$ambient_temp),
+       x = "Time (minutes)", y = "Can Temperature (°F)")
+
+grViz("
+        digraph CanTemp{
+        graph [rankdir = LR]
+        node [shape = point]
+            outFlow[label = '']
+
+
+        node[shape = rectangle]
+            canTemp[label = 'Can Temperature']
+
+
+        canTemp -> outFlow[label = 'Outflow = Can Temperature - Ambient Temperature']
+
+
+}
+
+")
+```
 
 Section 2.4
 13. Assume that the Reservoir in Figure 2.12 represents a population of people and that time is measured in years. Specify the units for all the system elements in Figure 2.12.
-14. Define three systems in real-life (other than those described in this chapter) that will exhibit logistic growth. For each example, identify the folloWing:
+
+reservoir: population (people)
+inflow: births (people/year)
+outflow: deaths (people/year)
+carrying capacity: population (people)
+
+14. Define three systems in real-life (other than those described in this chapter) that will exhibit logistic growth. For each example, identify the following:
 • The reservoir that will exhibit this type of behavior (specify its units) • All of the inflows and outflows (specify units)
-15. Use STELLA@, to construct the logistic model Figure 2.12. Assume that the reservoir represents a population of people and that time is mea- sured in years. Run the model for 100 years with each of the following sets of values for Ro, the Unconstrained Growth Rate, and the Carrying Capac- ity. In each case, make a graph of the reservoir versus time and explain why the system behaves as it does. In addition, for each case, write down Equa- tion (2.17), giving numerical values for all the parameters in that expres- sion.
-• Ro =10, Unconstrained Growth Rate - 0.1, Carrying Capacity =1,000 • Ro =10, Unconstrained Growth Rate =0.5, Carrying Capacity =500
-• Ro =2,000, Unconstrained Growth Rate =0.1, Carrying Capacity =500 • Ro = 2,000, Unconstrained Growth Rate = 0.5, Carrying Capacity = 1,000
+
+    1. Population of a species of fish in a lake
+        reservoir: population (fish)
+        inflow: births (fish/year)
+        outflow: deaths (fish/year)
+    2. Population of a species of plant in a forest
+        reservoir: population (plants)
+        inflow: births (plants/year)
+        outflow: deaths (plants/year)
+    3. Yeast population in a vat of fermenting beer
+        reservoir: population (g)
+        inflow: births (g/day)
+        outflow: deaths (g/day)
+
+
+15. Use R, to construct the logistic model Figure 2.12. Assume that the reservoir represents a population of people and that time is mea- sured in years. Run the model for 100 years with each of the following sets of values for Ro, the Unconstrained Growth Rate, and the Carrying Capac- ity. In each case, make a graph of the reservoir versus time and explain why the system behaves as it does. In addition, for each case, write down Equa- tion (2.17), giving numerical values for all the parameters in that expres- sion.
+• R_o =10, Unconstrained Growth Rate - 0.1, Carrying Capacity =1,000 • R_o =10, Unconstrained Growth Rate =0.5, Carrying Capacity =500
+• R_o =2,000, Unconstrained Growth Rate =0.1, Carrying Capacity =500 • R_o = 2,000, Unconstrained Growth Rate = 0.5, Carrying Capacity = 1,000
+
+```{r}
+logistic <- function(time, state, parameters) {
+
+    # Calculate the rate of change of the population
+    dpop <- parameters$unconstrained_growth_rate * state * (1 - state / parameters$carrying_capacity)
+
+    # Return the rate of change of the population
+    return(list(dpop))
+
+}
+
+# Set up the time vector
+time <- 0:100
+
+# Set initial values and parameters
+initial_state <- c(population = 10)
+parameters <- list(unconstrained_growth_rate = 0.1, carrying_capacity = 1000)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+
+# Set initial values and parameters
+initial_state <- c(population = 10)
+parameters <- list(unconstrained_growth_rate = 0.5, carrying_capacity = 500)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+
+
+# Set initial values and parameters
+initial_state <- c(population = 2000)
+parameters <- list(unconstrained_growth_rate = 0.1, carrying_capacity = 500)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+
+# Set initial values and parameters
+initial_state <- c(population = 2000)
+parameters <- list(unconstrained_growth_rate = 0.5, carrying_capacity = 1000)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+```
+
 16. Sketch a graph like Figure 2.13 showing what the system will behave like if the initial value of the reservoir is greater than the Carrying Capacity of the system. Make sure you show how the value of the Unconstrained Growth Rate will affect the shape of the graph.
+
+```{r}
+logistic <- function(time, state, parameters) {
+
+    # Calculate the rate of change of the population
+    dpop <- parameters$unconstrained_growth_rate * state * (1 - state / parameters$carrying_capacity)
+
+    # Return the rate of change of the population
+    return(list(dpop))
+
+}
+
+# Set up the time vector
+time <- 0:100
+
+# Set initial values and parameters
+initial_state <- c(population = 2000)
+parameters <- list(unconstrained_growth_rate = 0.1, carrying_capacity = 500)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+
+initial_state <- c(population = 2000)
+parameters <- list(unconstrained_growth_rate = 0.5, carrying_capacity = 500)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+```
+
 17. Identify and describe the feedback loops in Figure 2.12. Specify whether each is positive or negative feedback.
+
+1. as reservoir size increases, the inflow increases, thus increasing reservoir size. positive feedback
+2. as reservoir size increases, the outflow increases, thus decreasing reservoir size. negative feedback
+
 18. Show that Equation (2.16) is the rate equation for the logistic system in Figure 2.12. [Hint: Begin with the difference equation in Equation (2.15). Then use an approach similar to what was used to derive the rate equation for the exponential system, Equation (2.10)].
-19. In the logistics model described in Section 2.4, we assumed that the "death" rate would increase and the birth rate would remain constant as the population approached the Carrying Capacity of the system. In more advanced cultures, however, people may adopt a more proactive approach before resources are seriously depleted. In this scenario, individuals in the population may choose to have fewer children, thereby reducing the overall birth rate. In this case, the birth rate will decrease over time and the death rate will remain constant. The growth should again level off as the popula- tion approaches the Carrying Capacity. Create a systems model in STELLA@, to match this scenario. Make sure you specify all the equations and units for calculating the system quantities specify number using for the initial size of the population, the carrying capacity and any other values necessary to run the model. Include a graph that shows the Population and Resource reservoirs over time. Derive the rate equation for the system. This equation should be similar to (but not exactly the same) as Equation (2.15). Run the model for 50 years.
+
++ Define inflows and outflows based on relationships in Systems Diagram
+
+$Inflow = R(t) * UnconstrainedGrowth$
+$Outflow = R(t) * UnconstrainedGrowth * \frac{R(t)}{Carrying Capacity}$
+
+
++ State initial rate equation
+
+ $R(t + \Delta t) = R(t) + (inflows - outflows) * \Delta t$
+ 
+ 
+ + Substitute complex inflow and outflow definitions 
+ 
+ $R(t + \Delta t) = R(t) + (R(t) * UnconstrainedGrowth - (R(t) * UnconstrainedGrowth * \frac{R(t)}{Carrying Capacity})) * \Delta t$
+ 
+ 
++ Shift R(t) to left side to get closer to rate equation definition
+ 
+ $R(t + \Delta t) - R(t) = (R(t) * UnconstrainedGrowth - (R(t) * UnconstrainedGrowth * \frac{R(t)}{Carrying Capacity})) * \Delta t$
+          
+
++ Divide by dt to finish rate equation definition (dR(t)/dt)
+
+$(R(t + \Delta t) - R(t))/\Delta t = R(t) * UnconstrainedGrowth - (R(t) * UnconstrainedGrowth * \frac{R(t)}{Carrying Capacity})$
+
+
++ Factor out R(t) * Unconstrained growth to match format of k(t) term
+          
+$(R(t + \Delta t) - R(t))/dt = R(t) * UnconstrainedGrowth (1 - \frac{R(t)}{Carrying Capacity})$
+
+
+19. In the logistics model described in Section 2.4, we assumed that the "death" rate would increase and the birth rate would remain constant as the population approached the Carrying Capacity of the system. In more advanced cultures, however, people may adopt a more proactive approach before resources are seriously depleted. In this scenario, individuals in the population may choose to have fewer children, thereby reducing the overall birth rate. In this case, the birth rate will decrease over time and the death rate will remain constant. The growth should again level off as the popula- tion approaches the Carrying Capacity. Create a systems model in R, to match this scenario. Make sure you specify all the equations and units for calculating the system quantities specify number using for the initial size of the population, the carrying capacity and any other values necessary to run the model. Include a graph that shows the Population and Resource reservoirs over time. Derive the rate equation for the system. This equation should be similar to (but not exactly the same) as Equation (2.15). Run the model for 50 years.
+
+```{r}
+logistic <- function(time, state, parameters) {
+
+    # Calculate the rate of change of the population
+    dpop <- parameters$unconstrained_growth_rate * state * (1 - state / parameters$carrying_capacity)
+
+    # Return the rate of change of the population
+    return(list(dpop))
+
+}
+
+# Set up the time vector
+time <- 0:100
+
+# Set initial values and parameters
+initial_state <- c(population = 10)
+parameters <- list(unconstrained_growth_rate = 0.1, carrying_capacity = 1000)
+
+# Simulate the population dynamics using lsoda
+solution <- list(lsoda(initial_state, time, logistic, parameters))
+
+# Extract the population values from the solution
+population <- as.data.frame(solution)
+
+# Plot the population dynamics
+ggplot(data.frame(time, population), aes(x = time, y = population)) +
+  geom_line() +
+  labs(title = paste("Population Dynamics; Unconstrained Growth Rate = ", parameters$unconstrained_growth_rate, "; Carrying Capacity = ", parameters$carrying_capacity),
+       x = "Time (years)", y = "Population (people)")
+
+
+```
+
+
 Section 2.5
 20. Assume that the Resource reservoir in Figure 2.15 is measured in generic "resource units." In addition, assume that time is measured in years. What are the units for the Consumption flow process?
-21. Assume that in Figure 2.15 the initial value of Resource is 10,000 units, the initial value of Population is 10 people, the birth rate is 0.50 births per capita per year, and each person consumes two resource units per year. Use these values and Figure 2.15 to construct the overshoot and collapse model in STELLA·. Make a graph showing the Population and Resource reservoirs over time. Run the model for 50 years.
-a.
-b.
-c. d.
-Decrease the Birth Rate to 0.1 and rerun the model. Make sure you run long enough for the system to stablize. What differences do you see from the case in which the Birth Rate is 0.5? Make sure you pay attention to the scale on the vertical axis of the graph! Can you explain why the system's behavior changes in this way?
-Change the Birth Rate back to 0.50 and change the Consumption Rate to 20 units/person/year. Rerun the model and compare the results with the original case. Can you explain why the system's behavior changes in the ways that it does?
-Summarize what you have learned from these experiments with the model. What conditions lead to more rapid collapse of the system?
-See if you can identify values for the Birth Rate and Consumption Rate that will not lead to a total collapse of the Population for the preceding exercise. Can this be done? If so, how? Why is this the case?
-22. The expression used for the Per Capita Death Rate in Figure 2.15 is
-D = 1 - R(t). Under this formulation, the Death Rate will eventually reach levels that are very close to 100%. It may be the case, however, that the Population is not completely dependent on the Resource for survival. When- ever this is so, then the Death Rate may not approach 100% as the Resource is depleted. Suppose that the Death Rate D will reach only 60% as R(t) approaches zero. How could you modify the expression for D to accom- modate this fact? Incorporate this modification into the model correspond- ing to Figure 2.15 and then run the model with the original values for the Birth Rate, Population, and Resource, given in Exercise 21. How does the system behave? Can you explain why?
-23. Define three systems in real life (other than the 011 consumption example described in this section) that can exhibit overshoot and collapse behavior. Make sure that you sketch a system diagram for each case. Clearly identify all reservoirs, flows, and converters by giving them descriptive names. Clearly define the units for each quantity in the system.
-24. Some systems involve a Resource that can be replenished. For example, the Resource might represent a food supply that is renewable through agricultural methods or natural growth. Modify your STELLA@ model of the original system described in Exercise 21 so that the Resource can be renewed via a Renewal flow process. Assume that the Renewal inflow is proportional to the size of the Resource (as in an exponential model). Also assume that a converter called the Renewal Rate represents the proportionality constant. Set the Renewal Rate constant to be equal to 0.05. How does the behavior of this new system compare with the behav- ior of the original system? Can you explain why?
-Section 2.6
-25. Assume that time is measured in hours in Figure 2.19, that the Con- sumer reservoir is expressed as a number of organisms, and that the Resource reservoir is expressed as the number of generic resource units. Specify the units for all the other quantities in the model.
-26. Use STELLA@ to build the model in Figure 2.19. Populate the model with the values specified later. Make a graph shOWing both the Consumer and the Resource reservoirs over time. Run the model for 25 years, and answer the following questions. The graph of the Consumer and Resource reservoirs should exhibit simple oscillatory behavior. [Note: The oscillatory model has a complicated enough behavior that we must take special care to avoid serious round-off errors in STELLA@. This is done by using a very small time step and by using a more sophisticated numerical algorithm. You can make these changes by selecting Time Specs under the Run menu. The value of DT specifies the time step. Change DT to 0.0625 hours. In addi- tion, instruct STELLA@ to use the Runge-Kutta 2 method of integration in the Time Specs window of STELLA@.j
-G=1 D=20 Q=1 W=15 4=10 Ro=15
-a.
-b. c.
-d. e. f. g.
-What are the equilibrium values for the Consumer and Resource reser- voirs? Note that the equilibrium values are those midpoint values around which each reservoir oscillates.
-What is the period of this system? (A period is the length of time it takes for the system to complete one full cycle).
-When is the first time that the Consumer reservoir reaches its equilib- rium value in the simulation run? Where is the Resource reservoir in rela- tionship to its equilibrium value during this same time? How does the level of the Resource affect the behavior of the Consumer from this point in time until the Consumer next reaches its equilibrium?
-Do the Consumer and the Resource ever achieve equilibrium at the same time? What do you think would happen if they did?
-Change the value of W to 20 and re-run the model. What has changed? What explanation can you give?
-Change W back to 15 and then change the value of G to 0.5 and re-run the model. What has changed? What explanation can you give?
-Now change G back to 1. Set the starting value of C(t) and R(t) to be 4 =15 and Ro =20. Run the model. Can you explain why the system behaves this way?
-27. Imagine that you are a wildlife manager, responsible for keeping the population of a certain deer species as close to equilibrium as possible. Suppose that the only predators in your system are a population of wolves. How might knowledge of the steady-state behavior of this system aid you in your job? What would you do to try and maintain the deer population to a level as close to steady state as possible?
-Model Building Exercise
-28. Construct a system model in STELLA· that describes the relationships between the oil supply and the population of fossil fuel-burning vehicles. Your model should include at least three reservoirs: (1) the fossil fuel vehicles, (2) the supply of processed oil that is ready for consumption, and (3) the underground reserves of crude oil. Your model should include at least one feedback loop. Include flow processes for the production and obsolescence of vehicles and for the production and consumption of processed oil. Specify all interrelationships and equations or graphical relationships that are necessary in order for the model to run (apart from the values of constants). Provide descriptions within STELLA@ of each of the system components. Specify their units. Prepare a brief (one- or two-page) write-up describing your system and giving the rationale for the system diagram. Include a copy of the system diagram and a graph of the model output as part of the write-up. Answer the following questions:
 
-a. Describe the feedback loops in your system. Are they examples of pos- itive or negative feedback?
-b. Which types of behavior patterns will your model exhibit (linear, expo- nential, logistic, overshoot and collapse, or a combination)? Under what conditions will the type of behavior you identified occur? Briefly justify your answer.
+Units: resource units/capita/year
+
+21. Assume that in Figure 2.15 the initial value of Resource is 10,000 units, the initial value of Population is 10 people, the birth rate is 0.50 births per capita per year, and each person consumes two resource units per year. Use these values and Figure 2.15 to construct the overshoot and collapse model in R·. Make a graph showing the Population and Resource reservoirs over time. Run the model for 50 years.
+
+```{r}
+# Define the ODE system
+overshoot_collapse <- function(t, y, params) {
+    with(as.list(c(y, params)), {
+        dR <- -C * P
+        dP <- (B - (1 - (R/10000))) * P
+        return(list(c(dR, dP)))
+    })
+    }
+
+parms <- c(B = 0.5, C = 2)
+times <- seq(0, 50, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+    geom_line(aes(x = time, y = P)) +
+    labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+         x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+    geom_line(aes(x = time, y = R), color = "red") +
+    labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+         x = "Time (years)", y = "Resource (units)")
+
+
+
+
+```
+
+a.Decrease the Birth Rate to 0.1 and rerun the model. Make sure you run long enough for the system to stablize. What differences do you see from the case in which the Birth Rate is 0.5? Make sure you pay attention to the scale on the vertical axis of the graph! Can you explain why the system's behavior changes in this way?
+
+The model with a lower birth rate peaked at a lower population but later on than the one with a higher birth rate.
+This could be due to the fact that the population is growing at a slower rate, so it takes longer to reach the carrying capacity.
+```{r}
+parms <- c(B = 0.1, C = 2)
+times <- seq(0, 100, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+    geom_line(aes(x = time, y = P)) +
+    labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+         x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+    geom_line(aes(x = time, y = R), color = "red") +
+    labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+         x = "Time (years)", y = "Resource (units)")
+```
+
+
+
+b.Change the Birth Rate back to 0.50 and change the Consumption Rate to 20 units/person/year. Rerun the model and compare the results with the original case. Can you explain why the system's behavior changes in the ways that it does?
+
+this run supported a smaller population for a shorter period of time. This could be due to the fact that the population is consuming more resources per person, so the resource is depleted faster and therefore reaches its overshoot sooner.
+```{r}
+parms <- c(B = 0.5, C = 20)
+times <- seq(0, 50, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = P)) +
+  labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = R), color = "red") +
+  labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Resource (units)")
+```
+
+c.Summarize what you have learned from these experiments with the model. What conditions lead to more rapid collapse of the system?
+
+Higher birth rates and Higher consumption rates lead to more rapid collapse of the system.
+
+d.See if you can identify values for the Birth Rate and Consumption Rate that will not lead to a total collapse of the Population for the preceding exercise. Can this be done? If so, how? Why is this the case?
+
+The only value to prevent a total collapse of the population would be to have a consumption rate of 0 which is impossible. This is because the resource reservoir is non-renewable, so it will eventually be depleted.
+
+```{r}
+parms <- c(B = 0.1, C = 0)
+times <- seq(0, 50, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = P)) +
+  labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = R), color = "red") +
+  labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Resource (units)")
+```
+
+22. The expression used for the Per Capita Death Rate in Figure 2.15 is
+D = 1 - R(t). Under this formulation, the Death Rate will eventually reach levels that are very close to 100%. It may be the case, however, that the Population is not completely dependent on the Resource for survival. Whenever this is so, then the Death Rate may not approach 100% as the Resource is depleted. Suppose that the Death Rate D will reach only 60% as R(t) approaches zero. How could you modify the expression for D to accommodate this fact? Incorporate this modification into the model corresponing to Figure 2.15 and then run the model with the original values for the Birth Rate, Population, and Resource, given in Exercise 21. How does the system behave? Can you explain why?
+
+```{r}
+overshoot_collapse <- function(t, y, params) {
+  with(as.list(c(y, params)), {
+    dR <- -C * P
+
+    #modify the expression for D to accomodate the fact that the death rate will only reach 60% as R(t) approaches zero
+    dP <- (B - ((1 - (R/10000)) * 0.6)) * P
+    return(list(c(dR, dP)))
+  })
+}
+
+parms <- c(B = 0.5, C = 2)
+times <- seq(0, 50, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = P)) +
+  labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = R), color = "red") +
+  labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Resource (units)")
+```
+
+
+
+23. Define three systems in real life (other than the 011 consumption example described in this section) that can exhibit overshoot and collapse behavior. Make sure that you sketch a system diagram for each case. Clearly identify all reservoirs, flows, and converters by giving them descriptive names. Clearly define the units for each quantity in the system.
+
+```{r}
+#1. A population of deer in a forest
+grViz("
+digraph G {
+  rankdir = LR;
+  node [shape = rectangle];
+  Deer [label = 'Deer population'];
+  Forest [label = 'Resources'];
+
+    node [shape = point ];
+    birth [label = ''];
+    death [label = ''];
+    consumption [label = ''];
+
+    node [shape = circle, fontsize = 8];
+    BirthRate [label = 'Births/capita/yr' ];
+    ConsumptionRate [label = 'Consumption (resource unit/cap./yr)' ];
+    DeathRate [label = 'Deaths/capita/yr' ];
+
+    edge [penwidth = 2];
+    birth -> BirthRate;
+    BirthRate -> Deer;
+    Deer -> DeathRate;
+    DeathRate -> death;
+    Forest -> ConsumptionRate;
+    ConsumptionRate -> consumption;
+
+    edge [penwidth = 1, style = dashed];
+    Deer -> ConsumptionRate;
+    Deer -> DeathRate;
+    Deer -> BirthRate;
+    Forest -> DeathRate;
+}
+")
+
+#2. A population of fish in a lake
+grViz("
+digraph G {
+  rankdir = LR;
+  node [shape = rectangle];
+  Fish [label = 'Fish population'];
+  Lake [label = 'Resources'];
+
+    node [shape = point ];
+    birth [label = ''];
+    death [label = ''];
+    consumption [label = ''];
+
+    node [shape = circle, fontsize = 8];
+    BirthRate [label = 'Births/capita/yr' ];
+    ConsumptionRate [label = 'Consumption (resource unit/cap./yr)' ];
+    DeathRate [label = 'Deaths/capita/yr' ];
+
+    edge [penwidth = 2];
+    birth -> BirthRate;
+    BirthRate -> Fish;
+    Fish -> DeathRate;
+    DeathRate -> death;
+    Lake -> ConsumptionRate;
+    ConsumptionRate -> consumption;
+
+    edge [penwidth = 1, style = dashed];
+    Fish -> ConsumptionRate;
+    Fish -> DeathRate;
+    Fish -> BirthRate;
+    Lake -> DeathRate;
+}
+")
+
+#3. Soil erosion
+grViz("
+
+digraph G {
+  rankdir = LR;
+  node [shape = rectangle];
+  Nutrients [label = 'Soil Nutrients'];
+  Organic_matter [label = 'Soil Organic Matter'];
+
+    node [shape = point ];
+    Nutrient_in [label = ''];
+    Nutrient_loss [label = ''];
+    Org_decomp [label = ''];
+
+    node [shape = circle, fontsize = 8];
+    Nutrient_in_rate [label = 'Nutrient Input (Kg/yr)' ];
+    Nutrient_out_rate [label = 'Nutrient Loss (Kg/yr)' ];
+    OrgDecomp_rate [label = 'Organic Matter Decomp (Kg/yr)' ];
+
+    edge [penwidth = 2];
+      Nutrient_in -> Nutrient_in_rate;
+        Nutrient_in_rate -> Nutrients;
+        Nutrients -> Nutrient_out_rate;
+        Nutrient_out_rate -> Nutrient_loss;
+        Organic_matter -> OrgDecomp_rate;
+        OrgDecomp_rate -> Org_decomp;
+
+    edge [penwidth = 1, style = dashed];
+    Nutrients -> OrgDecomp_rate;
+    Nutrients -> Nutrient_out_rate;
+    Nutrients -> Nutrient_in_rate;
+    Organic_matter -> Nutrient_out_rate;
+}
+")
+```
+
+
+
+24. Some systems involve a Resource that can be replenished. For example, the Resource might represent a food supply that is renewable through agricultural methods or natural growth. Modify your R model of the original system described in Exercise 21 so that the Resource can be renewed via a Renewal flow process. Assume that the Renewal inflow is proportional to the size of the Resource (as in an exponential model). Also assume that a converter called the Renewal Rate represents the proportionality constant. Set the Renewal Rate constant to be equal to 0.05. How does the behavior of this new system compare with the behav- ior of the original system? Can you explain why?
+
+The addition of a resource renewel flow changes the shape of the resource graph. However, the population shill peaks and then crashes. Once the resource pool reaches 0 the renewal no longer works.
+
+```{r}
+overshoot_collapse <- function(t, y, params) {
+  with(as.list(c(y, params)), {
+    dR <- -C * P + (.05 * R)
+    dP <- (B - (1 - (R/10000))) * P
+    return(list(c(dR, dP)))
+  })
+}
+
+parms <- c(B = 0.5, C = 2)
+times <- seq(0, 50, by = 1)
+state <- c(R = 10000, P = 10)
+
+output <- lsoda(state, times, overshoot_collapse, parms)
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = P)) +
+  labs(title = paste("Population Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Population (people)")
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = R), color = "red") +
+  labs(title = paste("Resource Dynamics; Birth Rate = ", parms[1], "; Consumption Rate = ", parms[2]),
+       x = "Time (years)", y = "Resource (units)")
+```
+
+
+Section 2.6
+25. Assume that time is measured in hours in Figure 2.19, that the Consumer reservoir is expressed as a number of organisms, and that the Resource reservoir is expressed as the number of generic resource units. Specify the units for all the other quantities in the model.
+Consumer Growth Rate: Organisms/hr/resource unit
+Resource Growth Rate: Resource Units/hr
+Resource consumption rate: Resource Units/hr/organism
+Consumer death rate: Organisms/hr
+
+
+
+26. Use R to build the model in Figure 2.19. Populate the model with the values specified later. Make a graph shOWing both the Consumer and the Resource reservoirs over time. Run the model for 25 years, and answer the following questions. The graph of the Consumer and Resource reservoirs should exhibit simple oscillatory behavior.
+
+G=1 D=20 Q=1 W=15 C_i=10 R_i=15
+
+```{r}
+Oscillation <- function(t, y, params) {
+  with(as.list(c(y, params)), {
+    dC <- G * R - D
+    dR <- W - Q * C
+    return(list(c(dC, dR)))
+  })
+}
+
+parms <- c(G = 1, D = 20, Q = 1, W = 15)
+times <- seq(0, 25, by = .1)
+state <- c(C = 15, R = 20)
+
+output <- lsoda(state, times, Oscillation, parms)
+
+ggplot(as.data.frame(output)) +
+  geom_line(aes(x = time, y = C)) +
+  labs(title = paste("Consumer Dynamics; Oranism Growth Rate = ", parms[1], "; Organism Death Rate = ", parms[2],
+                     "; Resource Consumption Rate = ", parms[3], "; Resource Growth Rate = ", parms[4]),
+       x = "Time (hours)", y = "Consumer (organisms)")
+
+ggplot(as.data.frame(output)) +
+    geom_line(aes(x = time, y = R), color = "red") +
+    labs(title = paste("Consumer Dynamics; Oranism Growth Rate = ", parms[1], "; Organism Death Rate = ", parms[2],
+                       "; Resource Consumption Rate = ", parms[3], "; Resource Growth Rate = ", parms[4]),
+         x = "Time (hours)", y = "Resource (units)")
+```
+
+
+a.What are the equilibrium values for the Consumer and Resource reservoirs? Note that the equilibrium values are those midpoint values around which each reservoir oscillates.
+
+Resource: 20, Consumer: 15
+
+b. What is the period of this system? (A period is the length of time it takes for the system to complete one full cycle).
+
+Period: 6 hours
+
+c. When is the first time that the Consumer reservoir reaches its equilibrium value in the simulation run? Where is the Resource reservoir in relationship to its equilibrium value during this same time? How does the level of the Resource affect the behavior of the Consumer from this point in time until the Consumer next reaches its equilibrium?
+
+Consumer reaches it's equillibrium value at about 2.5 hours, when resources are at a maxium. The consumer then begins to die off as the resource level drops.
+
+d. Do the Consumer and the Resource ever achieve equilibrium at the same time? What do you think would happen if they did?
+
+No they do not. If they did the system would be stable and the consumer would not die off.
+
+e. Change the value of W to 20 and re-run the model. What has changed? What explanation can you give?
+
+The consumer equillibrium is higher, now around 20, which implies a faster resource growth rate can support a higher consumer population.
+
+f. Change W back to 15 and then change the value of G to 0.5 and re-run the model. What has changed? What explanation can you give?
+
+The resource pool's equillibrium is now 40 and the period is closer to 10 hours, which implies that the consumer population is growing slower and the resource pool is growing faster.
+
+g.Now change G back to 1. Set the starting value of C(t) and R(t) to be C_i = 15 and R_i = 20. Run the model. Can you explain why the system behaves this way?
+
+The model achieves equillibrium at the starting values, which implies that the system is stable at these values.
+
+
+27. Imagine that you are a wildlife manager, responsible for keeping the population of a certain deer species as close to equilibrium as possible. Suppose that the only predators in your system are a population of wolves. How might knowledge of the steady-state behavior of this system aid you in your job? What would you do to try and maintain the deer population to a level as close to steady state as possible?
+
+I would try to keep the wolf population at a level that would keep the deer population at a steady state. If the wolf population was too high, the deer population would drop, and if the wolf population was too low, the deer population would grow too large.
+
+Model Building Exercise
+28. Construct a system model in R that describes the relationships between the oil supply and the population of fossil fuel-burning vehicles. Your model should include at least three reservoirs: (1) the fossil fuel vehicles, (2) the supply of processed oil that is ready for consumption, and (3) the underground reserves of crude oil. Your model should include at least one feedback loop. Include flow processes for the production and obsolescence of vehicles and for the production and consumption of processed oil. Specify all interrelationships and equations or graphical relationships that are necessary in order for the model to run (apart from the values of constants). Provide descriptions within R of each of the system components. Specify their units. Prepare a brief  write-up describing your system and giving the rationale for the system diagram. Include a copy of the system diagram and a graph of the model output as part of the write-up. Answer the following questions:
+
+a. Describe the feedback loops in your system. Are they examples of positive or negative feedback?
+b. Which types of behavior patterns will your model exhibit (linear, exponential, logistic, overshoot and collapse, or a combination)? Under what conditions will the type of behavior you identified occur? Briefly justify your answer.
+
+```{r}
+grViz("
+digraph oil_supply{
+     graph [layout = dot, rankdir = LR]
+        node [shape = rectangle, style = filled, fillcolor = lightblue, fontsize = 15]
+        FV [label = 'Fossil Fuel Vehicles'] #Units: number of Vehicles
+        POS [label = 'Processed Oil Supply'] #Units: Liters
+        URCO [label = 'Underground Reserves of Crude Oil'] #Units: Liters
+
+        node [shape = circle, fontsize = 10]
+        VProductionRate [label = 'Vehicle Production Rate'] #Num vehicles per L of oil per day
+        VObsolescenceRate [label = 'Vehicle Obsolescence Rate'] #Number of vehicles per day
+        OProdRate [label = 'Oil Production Rate'] #Liters per day
+        OConsRate [label = 'Oil Consumption Rate'] # Liters per vehicles per day
+        
+        node [shape = point, style = invis]
+        Vout [label = '']
+        Oout [label = '']
+        
+        edge [penwidth  = 2, rank = same]
+        
+        subgraph v{
+        URCO -> OProdRate
+        OProdRate -> POS
+        POS -> OConsRate
+         OConsRate -> Oout
+        }
+        
+        subgraph o{
+        VProductionRate-> FV
+        FV -> VObsolescenceRate
+        VObsolescenceRate -> Vout
+        }
+       
+        
+        {rank = same}
+        
+        edge [penwidth = 1, style = dashed]
+        FV -> OConsRate
+        POS -> VProductionRate
+
+        
+
+        label = 'System Model: Oil Supply vs. Fossil Fuel Vehicles'
+        labelloc = t
+}
+")
+
+```
+
+```{r}
+Oil <- function(t, y, params) {
+  with(as.list(c(y, params)), {
+    dFV <- (VProductionRate*(POS/1e7) - VObsolescenceRate)
+    dPOS <- (OProdRate*(URCO/1e8) - OConsRate * FV) 
+    dURCO <- -OProdRate 
+    return(list(c(dFV, dPOS, dURCO)))
+  })
+}
+
+times <- seq(0, 400, by = 1)
+state <- c(FV = 1e6, POS = 1e7, URCO = 1e8)
+parms <- c(VProductionRate = 1e4, VObsolescenceRate = 1e3, OProdRate = 1e5, OConsRate = 0.1)
+out <- ode(y = state, times = times, func = Oil, parms = parms)
+ggplot(as.data.frame(out)) +
+  geom_line(aes(x = time, y = FV)) +
+  labs(title = paste("Fossil Fuel Vehicle Dynamics; Vehicle Production Rate = ", parms[1], "; Vehicle Obsolescence Rate = ", parms[2],
+                     "; Oil Production Rate = ", parms[3], "; Oil Consumption Rate = ", parms[4]),
+       x = "Time (days)", y = "Fossil Fuel Vehicles (number)")
+
+ggplot(as.data.frame(out)) +
+    geom_line(aes(x = time, y = POS), color = "red") +
+    labs(title = paste("Processed Oil Supply Dynamics; Vehicle Production Rate = ", parms[1], "; Vehicle Obsolescence Rate = ", parms[2],
+                         "; Oil Production Rate = ", parms[3], "; Oil Consumption Rate = ", parms[4]),
+         x = "Time (days)", y = "Processed Oil Supply (Liters)")
+
+ggplot(as.data.frame(out)) +
+    geom_line(aes(x = time, y = URCO), color = "blue") +
+    labs(title = paste("Underground Reserves of Crude Oil Dynamics; Vehicle Production Rate = ", parms[1], "; Vehicle Obsolescence Rate = ", parms[2],
+                         "; Oil Production Rate = ", parms[3], "; Oil Consumption Rate = ", parms[4]),
+         x = "Time (days)", y = "Underground Reserves of Crude Oil (Liters)")
+```
