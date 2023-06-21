@@ -17,10 +17,10 @@ grViz("
     
     node [shape = circle, shape = point]
           
-            out1 [label = \"\"]
-            in1 [label = \"\"]
-            in2[label = \"\"]
-            out2[label = \"\"]
+            out1 [label = '']
+            in1 [label = '']
+            in2[label = '']
+            out2[label = '']
 
     node [shape = square, style = fill]
             People [label = PeopleOnIsland]
@@ -70,8 +70,8 @@ grViz("
     digraph boxes_and_circles{
     graph [overlap = true, fontsize = 10, rankdir = LR]
     node [shape = circle, style =invis]
-            out1 [label = \"\"]
-            in1 [label = \"\"]
+            out1 [label = '']
+            in1 [label = '']
             
           
 

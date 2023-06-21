@@ -1,0 +1,104 @@
+---
+title: "chapter_3"
+output: html_document
+date: '2023-06-16'
+---
+
+```{r}
+library(deSolve)
+library(DiagrammeR)
+library(ggplot2)
+```
+
+Section 3.2
+1. Fill in the unspecified units for each of the quantities in Table 3.1.
+
+Contact Rate: exposures/fish/day
+Exposure Rate: at-risk exposures/fish/day
+(Fraction of at-risk exposures with an infected fish in a given day.)
+Death: fish/day
+Fatality Rate: deaths/sick fish
+Recovering: fish/day
+Recovery Time: days
+Losing Resistance: fish/day
+Resistance Time: days
+
+2. The system diagram in Figure 3.1 could be modified so that a conveyor is not used for the Resistant Fish reservoir. Using this approach, the Resistance Time could still be used to dictate how long a fish would typically remain resistant. Assume that the Resistance Time is 30 days and give an equation for calculating number of fish flowing through the Losing Resistance flow under this new setup. (Hint If the Resistance Time is 30 days, what fraction of the Resistant Fish would typically lose resistance each day?)
+
+Resistance Time = 30 days
+Losing Resistance = (Resistant Fish/Resistance Time) * Resistant Fish
+
+3. What is the difference between the approach used in Question 3 and the approach based on using conveyors?
+
+The approach used in Question 3 expresses the Losing Resistance flow as a probability of losing resistance per day. The approach based on using conveyors expresses the Losing Resistance flow as a number of fish losing resistance per day, the value of which is dependent on the number of fish in the Resistant Fish reservoir at (t-30).
+
+Section 3.3
+4. You will find here two example purpose statements for other modeling problems. For each example, identify (1) the system to be studied, (2) the behaviors to be understood, and (3) the core questions to be addressed.
+a.The purpose of this modeling effort is to understand the underlying mechanisms by which global CFC production is depleting stratospheric ozone levels, and to evaluate the long-term impact of the Montreal Protocol on those levels.
+
+1. System: Global CFC production and stratospheric ozone levels
+2. Behaviors: Depletion of stratospheric ozone levels
+3. Core Questions: What are the underlying mechanisms by which global CFC production is depleting stratospheric ozone levels? What is the long-term impact of the Montreal Protocol on those levels?
+
+b.The purpose of this modeling effort is to understand why the effluent from the local waste treatment facility in a university community exhibits a spike in biochemical oxygen demand for the 2 weeks after the end of a university holiday. We also wish to determine if this spike can be eliminated by seeding the bacteria population in the settling pond.
+
+1. System: Effluent from the local waste treatment facility in a university community
+2. Behaviors: Spike in biochemical oxygen demand for the 2 weeks after the end of a university holiday
+3. Core Questions: Why does the effluent from the local waste treatment facility in a university community exhibit a spike in biochemical oxygen demand for the 2 weeks after the end of a university holiday? Can this spike be eliminated by seeding the bacteria population in the settling pond?
+
+
+5. You have been hired by a solid waste management company to analyze the potential for solid waste collection in a small college community whose population is increasing at a rate of 3% per year. In particular, the company is interested in evaluating the growth of waste in this community over a 20-year period. They are also interested in determining how this growth may be affected by a recycling and reuse campaign expected to begin within the community in the fifth year. Write a purpose statement for this modeling problem.
+
+We wish to model the growth of solid waste in a small college community over a 20-year period. We also wish to determine how this growth may be affected by a recycling and reuse campaign expected to begin within the community in the fifth year.
+
+Section 3.4
+6. Identify three possible enhancements to CHAP3a.STM to improve its structural validity. Modify the model to incorporate the enhancement that you think is most important among the three.
+```{r}
+
+Fish <- function (t, y, params){
+  with(as.list(c(y, params)), {
+    #Sick(t) <- sick(t-1) + infectiousness * susept * (1-(1-(sick(t-1)/pop)))
+    dSick <- infectiousness * susept * (1-(1-(sick/pop)))
+
+    #Suscept <- sick(t-resistance_t - recovery_t)(1 - fatality)
+    dSusept <-
+    dResistant <- fatality * sick - (1/fatality) * resistant
+    list(c(dSick, dSusept, dResistant))
+  })
+  }
+  })
+
+times <- seq(0, 730, by = 1)
+state <- c(sick = 10, susept = 90, resistant = 0)
+parms <- c(infectiousness = 0.1, contact = 20, fatality = .3, recovery_t = 30, resitance_t = 30)
+
+out <- ode(y = state, times = times, func = Fish, parms = parms)
+```
+
+
+7. Check the predictive validity of CHAP3a.STM by running it under the two sets of conditions specified in baseline behavior patterns in Figure 3.2.
+a. Identify modeling conditions to use to check against the first graph Figure 3.2. Run the model for 2 years (730 days) and check the system behavior. What do you see? Are there any changes to the model that are suggested from this check?
+b. Select conditions to use to in order evaluate how well the model matches the second graph in Figure 3.2 (note that several different conditions are possible). Run the model for 730 days and check the
+system behavior. What do you see?
+c. Does the model duplicate the baseline behavior patterns?If it differs from
+Figure 3.2, in what ways does it differ? Does this make physical sense, given the context of the problem? Are any modifications to the model suggested by this check?
+
+Section 3.5
+8. Briefly explain the behaviors you see in Figures 3.5, 3.7, and 3.9.
+9. Open the STELLAl!l model CHAP3a.STM. Modify this model to incor- porate each of the following perturbations by using the PULSE, STEp, and RAMP functions. Make sure you run only one case at a time (i.e., do not combine the cases described later). For each case, run the model for 2 years. Observe the behavior of the system and write a brief paragraph explaining why the system exhibits the particular behavior that you see. You can refer to the appendix at the end of this chapter to see how to use combinations of the PULSE, STEp, and RAMP functions to model each case.
+a. The Contact Rate stays at a level of 2 contactslfishlday until day 100, at which time the Contact Rate increases to 4 contacts/fish/day. (Hint Add a constant value to a STEP function).
+b. The Contact Rate stays level at 2 contactslfish/day until day 100, at which time the Contact Rate increases to 4 contacts/fish/day. On day 400, the Contact Rate returns to 2 contactslfish/day. (Hint Use two different STEP functions and a constant value).
+c. The Resistance Time begins at 0 and then increases by 0.5 days per day of simulation. (Hint Use the RAMP function. You do not have to specify a time value).
+10. Open the STELLAl!l model CHAP3b.STM. This model is in "flight sim- ulator mode" and allows you to make real-time changes to several variables. (See the appendix for a description of the "flight simulator" mode of simu- lation in STELLAl!l). Use the slider bar controls to make adjustments as the model runs. Run the model several times, each time simulating a step change in one variable. Observe the impact on system behavior, then briefly summarize what role you think each variable plays in the behavior of the overall system.
+11. Use the model CHAP3b.STM and STELLA'sl!l Sens; Specs to help you perform a sensitivity analysis on the remaining seven exogenous variables in the Fish Disease Model. Use a +/- 50% range for each variable. Produce a brief write-up for each variable that includes:
+a. A listing of the three values you used for the sensitivity analysis.
+b. A graph showing the results of the sensitivity runs for that variable.
+c. Abriefparagraphsummarizinghowthesystemrespondedtothechanges in the exogenous variable and why you think the system responded that way. You should also state clearly whether you consider the variable to exert high leverage on the system, low leverage, or neither. Then state what implications your analysis has for taking corrective action against disease X.
+
+Section 3.6
+12. Modify the model CHAP3a.STM to model the first intervention (repeated capture and removal of infected fish). Assume that this policy is instituted 50 days after the beginning of the simulation and that it results in doubling the Fatality Rate. Briefly summarize what impact this intervention has on the system. Would you recommend this approach to curbing the disease? Why or why not?
+13. Modify the model in CHAP3a.STM to run the "best case" analysis of the second intervention (introducing a more resistant strain of fish for which the infectiousness of disease X is 50% lower). Based on the results of the "best case" analysis, state whether you would recommend any further eval- uation of the second intervention.
+14. Modify the CHAP3a.STM system diagram to show how you would simulate a gradual introduction of 40 of the more resistant fish per year. (Hint: you will need to add a new series of reservoirs to keep track of the more resistant fish.)
+15. Formulate one other realistic intervention for addressing the disease X epidemic. Briefly describe the intervention. Modify CHAP3a.STM and make some simulation runs to evaluate your idea.
+
+
