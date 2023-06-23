@@ -53,26 +53,47 @@ We wish to model the growth of solid waste in a small college community over a 2
 
 Section 3.4
 6. Identify three possible enhancements to CHAP3a.STM to improve its structural validity. Modify the model to incorporate the enhancement that you think is most important among the three.
+
+Infectiousness: Beta (Converter constant, between 0 and 1, Probability of infection per exposure)
+Contact Rate: beta (Converter constant, Number of at-risk exposures per fish per day)
+Fatality Rate: mu (Converter constant, Fraction of sick fish that die)
+Recovery rate: gamma (Converter constant, Days)
+Resistance Time: K (Converter constant, Days)
+Susceptible Fish: S (Reservoir, Number of fish susceptible to infection)
+Sick Fish: I (Reservoir, Number of fish infected with the disease)
+Resistant Fish: R (Reservoir, Number of fish resistant to the disease)
+
+
 ```{r}
 
-Fish <- function (t, y, params){
-  with(as.list(c(y, params)), {
-    #Sick(t) <- sick(t-1) + infectiousness * susept * (1-(1-(sick(t-1)/pop)))
-    dSick <- infectiousness * susept * (1-(1-(sick/pop)))
+sird_model <- function(time, state, parameters) {
+     with(as.list(c(state, parameters)), {
+       dS <- -beta * (S * I) / N
+       dI <- (beta * (S * I) / N) - (gamma * I) - (mu * I)
+       dR <- gamma * I
+       dD <- mu * I
+       return(list(c(dS, dI, dR, dD)))
+     })
+   }
 
-    #Suscept <- sick(t-resistance_t - recovery_t)(1 - fatality)
-    dSusept <-
-    dResistant <- fatality * sick - (1/fatality) * resistant
-    list(c(dSick, dSusept, dResistant))
-  })
-  }
-  })
+   # Set the initial conditions and parameters
+   initial_state <- c(S = 100, I = 10, R = 0, D = 0)
+   parameters <- c(beta = 0.2, gamma = 0.1, mu = 0.01, N = sum(initial_state))
 
-times <- seq(0, 730, by = 1)
-state <- c(sick = 10, susept = 90, resistant = 0)
-parms <- c(infectiousness = 0.1, contact = 20, fatality = .3, recovery_t = 30, resitance_t = 30)
+   # Set the time points for which to solve the equations
+   times <- seq(0, 100, by = 1)
 
-out <- ode(y = state, times = times, func = Fish, parms = parms)
+   # Solve the equations using the ode solver
+   solution <- ode(y = initial_state, times = times, func = sird_model, parms = parameters)
+
+ggplot(data = as.data.frame(solution)) +
+  geom_line(aes(x = time, y = S, color = "Susceptible")) +
+  geom_line(aes(x = time, y = I, color = "Infected")) +
+  geom_line(aes(x = time, y = R, color = "Resistant")) +
+  geom_line(aes(x = time, y = D, color = "Dead")) +
+  labs(x = "Time", y = "Number of People") +
+  scale_color_manual(name = "Legend", values = c("Susceptible" = "blue", "Infected" = "red", "Resistant" = "green", "Dead" = "black"))
+
 ```
 
 

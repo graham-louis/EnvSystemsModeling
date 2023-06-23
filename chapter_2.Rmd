@@ -781,7 +781,7 @@ Oscillation <- function(t, y, params) {
 
 parms <- c(G = 1, D = 20, Q = 1, W = 15)
 times <- seq(0, 25, by = .1)
-state <- c(C = 15, R = 20)
+state <- c(C = 10, R = 15)
 
 output <- lsoda(state, times, Oscillation, parms)
 
@@ -841,7 +841,9 @@ b. Which types of behavior patterns will your model exhibit (linear, exponential
 ```{r}
 grViz("
 digraph oil_supply{
-     graph [layout = dot, rankdir = LR]
+
+    rankdir = 'LR'
+
         node [shape = rectangle, style = filled, fillcolor = lightblue, fontsize = 15]
         FV [label = 'Fossil Fuel Vehicles'] #Units: number of Vehicles
         POS [label = 'Processed Oil Supply'] #Units: Liters
@@ -859,25 +861,51 @@ digraph oil_supply{
         
         edge [penwidth  = 2, rank = same]
         
-        subgraph v{
-        URCO -> OProdRate
-        OProdRate -> POS
-        POS -> OConsRate
-         OConsRate -> Oout
-        }
-        
-        subgraph o{
-        VProductionRate-> FV
-        FV -> VObsolescenceRate
-        VObsolescenceRate -> Vout
-        }
-       
-        
-        {rank = same}
-        
-        edge [penwidth = 1, style = dashed]
-        FV -> OConsRate
-        POS -> VProductionRate
+        subgraph v {
+    // Add invisible nodes and edges to control ranking
+    { rank = same;
+      inv1 [style = invis];
+      inv2 [style = invis];
+      inv3 [style = invis];
+    }
+
+    URCO -> OProdRate;
+    OProdRate -> POS;
+    POS -> OConsRate;
+    OConsRate -> Oout;
+
+    // Connect invisible nodes to control ranking
+    URCO -> inv1 [style = invis];
+    inv1 -> OProdRate [style = invis];
+    inv2 -> POS [style = invis];
+    POS -> inv3 [style = invis];
+    inv3 -> OConsRate [style = invis];
+  }
+
+  subgraph o {
+    // Add invisible nodes and edges to control ranking
+    { rank = same;
+      inv4 [style = invis];
+      inv5 [style = invis];
+      inv6 [style = invis];
+    }
+
+    VProductionRate -> FV;
+    FV -> VObsolescenceRate;
+    VObsolescenceRate -> Vout;
+
+    // Connect invisible nodes to control ranking
+    VProductionRate -> inv4 [style = invis];
+    inv4 -> FV [style = invis];
+    FV -> inv5 [style = invis];
+    inv5 -> VObsolescenceRate [style = invis];
+    VObsolescenceRate -> inv6 [style = invis];
+  }
+
+  edge [penwidth = 1, style = dashed]
+  FV -> OConsRate [ltail = cluster_o, lhead = cluster_v];
+  POS -> VProductionRate [ltail = cluster_o, lhead = cluster_v];
+
 
         
 
@@ -891,16 +919,16 @@ digraph oil_supply{
 ```{r}
 Oil <- function(t, y, params) {
   with(as.list(c(y, params)), {
-    dFV <- (VProductionRate*(POS/1e7) - VObsolescenceRate)
-    dPOS <- (OProdRate*(URCO/1e8) - OConsRate * FV) 
-    dURCO <- -OProdRate 
+    dFV <- (VProductionRate - (1-(POS/1e7)) * FV)
+    dPOS <- (OProdRate - (OConsRate)*FV)
+    dURCO <- -OProdRate
     return(list(c(dFV, dPOS, dURCO)))
   })
 }
 
 times <- seq(0, 400, by = 1)
-state <- c(FV = 1e6, POS = 1e7, URCO = 1e8)
-parms <- c(VProductionRate = 1e4, VObsolescenceRate = 1e3, OProdRate = 1e5, OConsRate = 0.1)
+state <- c(FV = 0, POS = 1e7, URCO = 1e8)
+parms <- c(VProductionRate = 1e4, VObsolescenceRate = 0.05, OProdRate = 1e5, OConsRate = 0.1)
 out <- ode(y = state, times = times, func = Oil, parms = parms)
 ggplot(as.data.frame(out)) +
   geom_line(aes(x = time, y = FV)) +
