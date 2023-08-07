@@ -8,6 +8,7 @@ date: '2023-06-16'
 library(deSolve)
 library(DiagrammeR)
 library(ggplot2)
+library(tidyverse)
 ```
 
 Section 3.2
@@ -55,7 +56,7 @@ Section 3.4
 6. Identify three possible enhancements to CHAP3a.STM to improve its structural validity. Modify the model to incorporate the enhancement that you think is most important among the three.
 
 Infectiousness: Beta (Converter constant, between 0 and 1, Probability of infection per exposure)
-Contact Rate: beta (Converter constant, Number of at-risk exposures per fish per day)
+Contact Rate: alpha (Converter constant, Number of at-risk exposures per fish per day, given fish density and range of travel)
 Fatality Rate: mu (Converter constant, Fraction of sick fish that die)
 Recovery rate: gamma (Converter constant, Days)
 Resistance Time: K (Converter constant, Days)
@@ -64,62 +65,275 @@ Sick Fish: I (Reservoir, Number of fish infected with the disease)
 Resistant Fish: R (Reservoir, Number of fish resistant to the disease)
 
 
+
 ```{r}
-
 sird_model <- function(time, state, parameters) {
-     with(as.list(c(state, parameters)), {
-       dS <- -beta * (S * I) / N
-       dI <- (beta * (S * I) / N) - (gamma * I) - (mu * I)
-       dR <- gamma * I
-       dD <- mu * I
-       return(list(c(dS, dI, dR, dD)))
-     })
-   }
+  S <- state[1] #Susceptible Pool
+  I <- state[2] #Infected Pool
+  R <- state[3] #Resistant Pool
+  D <- state[4] #Dead pool
+  N <- S + I + R #Total Living Poulation
+  
+  parameters <- as.list(parameters)
+  
+  #comment equations
+  
+  
+  dS <- (-parameters$beta * parameters$alpha * S * I / N) +
+    parameters$k * R 
+  
+  dI <- parameters$beta * parameters$alpha * S * I /N -   
+    parameters$gamma*I - 
+    parameters$mu*I
+  
+  dR <- parameters$gamma*I -
+    (parameters$k * R)
+  
+  dD <- parameters$mu*I
 
-   # Set the initial conditions and parameters
-   initial_state <- c(S = 100, I = 10, R = 0, D = 0)
-   parameters <- c(beta = 0.2, gamma = 0.1, mu = 0.01, N = sum(initial_state))
+  return(list(c(dS, dI, dR, dD)))
+}
 
-   # Set the time points for which to solve the equations
-   times <- seq(0, 100, by = 1)
+# Set the initial conditions and parameters
+initial_state <- c(S = 90, I = 10, R = 0, D = 0)
+parameters <- c(alpha = 5, beta = 0.05, gamma = 0.1, mu = 0.001, k = .004)
 
-   # Solve the equations using the ode solver
-   solution <- ode(y = initial_state, times = times, func = sird_model, parms = parameters)
+# Set the time points for which to solve the equations
+times <- seq(0, 730, by = 1)
 
-ggplot(data = as.data.frame(solution)) +
-  geom_line(aes(x = time, y = S, color = "Susceptible")) +
-  geom_line(aes(x = time, y = I, color = "Infected")) +
-  geom_line(aes(x = time, y = R, color = "Resistant")) +
-  geom_line(aes(x = time, y = D, color = "Dead")) +
-  labs(x = "Time", y = "Number of People") +
-  scale_color_manual(name = "Legend", values = c("Susceptible" = "blue", "Infected" = "red", "Resistant" = "green", "Dead" = "black"))
+# Solve the equations using the ode solver
+primarySolution <- lsoda(y = initial_state,
+                  times = times, func = sird_model, parms = parameters)
 
+ggplot(as.data.frame(primarySolution) %>%
+         pivot_longer(cols = -time)) +
+  geom_line(aes(x=time, y = value, group = name)) +
+  facet_wrap(~name)
 ```
 
 
 7. Check the predictive validity of CHAP3a.STM by running it under the two sets of conditions specified in baseline behavior patterns in Figure 3.2.
 a. Identify modeling conditions to use to check against the first graph Figure 3.2. Run the model for 2 years (730 days) and check the system behavior. What do you see? Are there any changes to the model that are suggested from this check?
+
+When the infected population is 0 the model exhibits steady behavior matching the first graph in Figure 3.2.
+```{r}
+# Set the initial conditions and parameters
+initial_state <- c(S = 100, I = 0, R = 0, D = 0) #changed I to 0
+parameters <- c(beta = 0.5, gamma = 0.1, mu = 0.00, k = .004)
+
+# Set the time points for which to solve the equations
+times <- seq(0, 730, by = 1)
+
+# Solve the equations using the ode solver
+solution <- lsoda(y = initial_state,
+                  times = times, func = sird_model, parms = parameters)
+
+ggplot(as.data.frame(solution)) +
+  geom_line(aes(x=time, y = S), color = "blue") +
+  geom_line(aes(x=time, y = I), color = "red") +
+  geom_line(aes(x=time, y = R), color = "green") +
+  geom_line(aes(x=time, y = D), color = "black")
+```
+
 b. Select conditions to use to in order evaluate how well the model matches the second graph in Figure 3.2 (note that several different conditions are possible). Run the model for 730 days and check the
 system behavior. What do you see?
+
+```{r}
+# Set the initial conditions and parameters
+initial_state <- c(S = 990, I = 10, R = 0, D = 0)
+parameters <- c(beta = 0.5, gamma = 0.2, mu = 0.0, k = .004)
+
+# Set the time points for which to solve the equations
+times <- seq(0, 730, by = 1)
+
+# Solve the equations using the ode solver
+solution <- lsoda(y = initial_state,
+                  times = times, func = sird_model, parms = parameters)
+
+#pivot and assign color to pool
+
+ggplot(as.data.frame(solution)) +
+        geom_line(aes(x=time, y = S), color = "blue") +
+        geom_line(aes(x=time, y = I), color = "red") +
+        geom_line(aes(x=time, y = R), color = "green") +
+        geom_line(aes(x=time, y = D), color = "black")
+```
 c. Does the model duplicate the baseline behavior patterns?If it differs from
 Figure 3.2, in what ways does it differ? Does this make physical sense, given the context of the problem? Are any modifications to the model suggested by this check?
 
-Section 3.5
-8. Briefly explain the behaviors you see in Figures 3.5, 3.7, and 3.9.
-9. Open the STELLAl!l model CHAP3a.STM. Modify this model to incor- porate each of the following perturbations by using the PULSE, STEp, and RAMP functions. Make sure you run only one case at a time (i.e., do not combine the cases described later). For each case, run the model for 2 years. Observe the behavior of the system and write a brief paragraph explaining why the system exhibits the particular behavior that you see. You can refer to the appendix at the end of this chapter to see how to use combinations of the PULSE, STEp, and RAMP functions to model each case.
-a. The Contact Rate stays at a level of 2 contactslfishlday until day 100, at which time the Contact Rate increases to 4 contacts/fish/day. (Hint Add a constant value to a STEP function).
+The model does not duplicate the baseline behavior patterns, instead it has a tendency to exhibit oscillations that move towards a steady state.
+
+8. Briefly explain the behaviors you see in Figures 3.5, 3.7, and 3.9
+
+3.5 demonstrates the effect of a single pulse to the infected pool which changes it from 0 to 10 at day 100. 3.7 shows a step inflow, adding 10 fish per day after day 100. 3.9 shows a ramp inflow, adding 10 fish per day after day 100, increasing by 10 fish per day until day 200.
+
+9. Open the STELLAl!l model CHAP3a.STM. Modify this model to incorporate each of the following perturbations by using the PULSE, STEp, and RAMP functions. Make sure you run only one case at a time (i.e., do not combine the cases described later). For each case, run the model for 2 years. Obsing 10 fish per day after day 100. 3.9 shows a ramp inflow, adding 10 fish per day after day 100, increasing by 10 fish per day until day 200.
+
+a. The Contact Rate stays at a level of 2 contacts/fish/day until day 100, at which time the Contact Rate increases to 4 contacts/fish/day. (Hint Add a constant value to a STEP function).
+
+```{r}
+#run from time 1 to time 2 then time 2 to time three
+
+initial_state <- c(S = 100, I = 10, R = 0, D = 0)
+parameters <- c(alpha = 5, beta = 0.5, gamma = 0.1, mu = 0.001, k = .004)
+
+# Set the time points for which to solve the equations
+times <- seq(0, 99, by = 1)
+
+# Solve the equations using the ode solver
+solution1 <- as.data.frame(lsoda(y = initial_state,
+                  times = times, func = sird_model, parms = parameters))
+
+# Set the time points for which to solve the equations
+times <- seq(99, 730, by = 1)
+
+secondary_state <-c(S = solution1$S[100], I = solution1$I[100], R = solution1$R[100], D = solution1$D[100])
+parameters <- c(alpha = 5, beta = 0.02, gamma = 0.1, mu = 0.001, k = .004)
+
+# Solve the equations using the ode solver
+solution2 <- as.data.frame(lsoda(y = secondary_state,
+                  times = times, func = sird_model, parms = parameters))
+
+solution <- bind_rows(solution1, solution2)
+
+
+kicked_plot <- ggplot(solution) +
+  geom_line(aes(x=time, y = S), color = "blue") +
+  geom_line(aes(x=time, y = I), color = "red") +
+  geom_line(aes(x=time, y = R), color = "green") +
+  geom_line(aes(x=time, y = D), color = "black") +
+  geom_line(data = as.data.frame(primarySolution),
+            aes(x=time, y = S), color = "blue", linetype = 2) +
+  geom_vline(xintercept = 99) +
+  
+  
+kicked_plot
+
+```
+
 b. The Contact Rate stays level at 2 contactslfish/day until day 100, at which time the Contact Rate increases to 4 contacts/fish/day. On day 400, the Contact Rate returns to 2 contactslfish/day. (Hint Use two different STEP functions and a constant value).
+
+```{r}
+#same method as previous
+initial_state <- c(S = 100, I = 10, R = 0, D = 0)
+parameters <- c(beta = 0.5, gamma = 0.1, mu = 0.001, k = .004)
+
+# Set the time points for which to solve the equations
+times <- seq(0, 100, by = 1)
+
+# Solve the equations using the ode solver
+solution1 <- as.data.frame(lsoda(y = initial_state,
+                                 times = times, func = sird_model, parms = parameters))
+
+# Set the time points for which to solve the equations
+times <- seq(100, 400, by = 1)
+
+secondary_state <-c(S = solution1$S[101], I = solution1$I[101], R = solution1$R[101], D = solution1$D[101])
+parameters <- c(beta = 0.02, gamma = 0.1, mu = 0.001, k = .004)
+
+# Solve the equations using the ode solver and remove the first row
+solution2 <- as.data.frame(lsoda(y = secondary_state,
+                                 times = times, func = sird_model, parms = parameters)) %>%
+        slice(-1)
+
+
+# Set the time points for which to solve the equations
+times <- seq(400, 730, by = 1)
+
+ tertiary_state <-c(S = solution2$S[300], I = solution2$I[300], R = solution2$R[300], D = solution2$D[300])
+parameters <- c(beta = 0.5, gamma = 0.1, mu = 0.001, k = .004)
+
+# Solve the equations using the ode solver
+solution3 <- as.data.frame(lsoda(y = tertiary_state,
+                                 times = times, func = sird_model, parms = parameters)) %>%
+        slice(-1)
+
+solution <- full_join(solution1, solution2)
+solution <- full_join(solution, solution3)
+
+ggplot(solution) +
+        geom_line(aes(x=time, y = S), color = "blue") +
+        geom_line(aes(x=time, y = I), color = "red") +
+        geom_line(aes(x=time, y = R), color = "green") +
+        geom_line(aes(x=time, y = D), color = "black")
+```
+
 c. The Resistance Time begins at 0 and then increases by 0.5 days per day of simulation. (Hint Use the RAMP function. You do not have to specify a time value).
-10. Open the STELLAl!l model CHAP3b.STM. This model is in "flight sim- ulator mode" and allows you to make real-time changes to several variables. (See the appendix for a description of the "flight simulator" mode of simu- lation in STELLAl!l). Use the slider bar controls to make adjustments as the model runs. Run the model several times, each time simulating a step change in one variable. Observe the impact on system behavior, then briefly summarize what role you think each variable plays in the behavior of the overall system.
-11. Use the model CHAP3b.STM and STELLA'sl!l Sens; Specs to help you perform a sensitivity analysis on the remaining seven exogenous variables in the Fish Disease Model. Use a +/- 50% range for each variable. Produce a brief write-up for each variable that includes:
+```{r}
+sird_model2 <- function(time, state, parameters) {
+  S <- state[1]
+  I <- state[2]
+  R <- state[3]
+  D <- state[4]
+  N <- S + I + R
+  parameters <- as.list(parameters)
+  
+  resistanceTime <- parameters$k_rate * time
+  
+  dS <- (-parameters$beta * S * I / N) + resistanceTime * R
+  dI <- parameters$beta*S*I/N - parameters$gamma*I - parameters$mu*I
+  dR <- parameters$gamma*I - (resistanceTime * R)
+  dD <- parameters$mu*I
+
+  return(list(c(dS, dI, dR, dD)))
+}
+
+# Set the initial conditions and parameters
+initial_state <- c(S = 100, I = 10, R = 0, D = 0)
+parameters <- c(beta = 0.5, gamma = 0.1, mu = 0.001, k = .004, k_rate = 0.5)
+
+# Set the time points for which to solve the equations
+times <- seq(0, 300, by = 1)
+
+# Solve the equations using the ode solver
+solution <- lsoda(y = initial_state,
+                  times = times, func = sird_model2, parms = parameters)
+
+ggplot(as.data.frame(solution) %>%
+         pivot_longer(cols = -time)) +
+  geom_line(aes(x=time, y = value, group = name)) +
+  facet_wrap(~name)
+```
+
+
+
+11. Use the model CHAP3b.STM and STELLA's l!l Sens; Specs to help you perform a sensitivity analysis on the remaining seven exogenous variables in the Fish Disease Model. Use a +/- 50% range for each variable. Produce a brief write-up for each variable that includes:
 a. A listing of the three values you used for the sensitivity analysis.
 b. A graph showing the results of the sensitivity runs for that variable.
-c. Abriefparagraphsummarizinghowthesystemrespondedtothechanges in the exogenous variable and why you think the system responded that way. You should also state clearly whether you consider the variable to exert high leverage on the system, low leverage, or neither. Then state what implications your analysis has for taking corrective action against disease X.
+c. A brief paragraph summarizing how the system responded to the changes in the exogenous variable and why you think the system responded that way. You should also state clearly whether you consider the variable to exert high leverage on the system, low leverage, or neither. Then state what implications your analysis has for taking corrective action against disease X.
+
+```{r}
+#sensitivity analysis
+initial_state <- c(S = 100, I = 10, R = 0, D = 0)
+parameters_base <- c(beta = 0.5, gamma = 0.1, mu = 0.001, k = .004)
+times <- seq(0, 730, by = 1)
+
+solve_model.fns <- function(parameters) {
+        solution <- as.data.frame(lsoda(y = initial_state,
+                                        times = times, func = sird_model, parms = parameters))
+        return(solution)
+}
+
+#matrix of parameters with one row for each kicked parameter
+parameters <- parameters_base %>%
+        mutate()
+
+
+```
 
 Section 3.6
 12. Modify the model CHAP3a.STM to model the first intervention (repeated capture and removal of infected fish). Assume that this policy is instituted 50 days after the beginning of the simulation and that it results in doubling the Fatality Rate. Briefly summarize what impact this intervention has on the system. Would you recommend this approach to curbing the disease? Why or why not?
+
+
+
 13. Modify the model in CHAP3a.STM to run the "best case" analysis of the second intervention (introducing a more resistant strain of fish for which the infectiousness of disease X is 50% lower). Based on the results of the "best case" analysis, state whether you would recommend any further eval- uation of the second intervention.
+
+
+
 14. Modify the CHAP3a.STM system diagram to show how you would simulate a gradual introduction of 40 of the more resistant fish per year. (Hint: you will need to add a new series of reservoirs to keep track of the more resistant fish.)
+
+
+
 15. Formulate one other realistic intervention for addressing the disease X epidemic. Briefly describe the intervention. Modify CHAP3a.STM and make some simulation runs to evaluate your idea.
 
 

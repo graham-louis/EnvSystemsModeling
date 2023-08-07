@@ -768,44 +768,46 @@ Consumer death rate: Organisms/hr
 
 26. Use R to build the model in Figure 2.19. Populate the model with the values specified later. Make a graph shOWing both the Consumer and the Resource reservoirs over time. Run the model for 25 years, and answer the following questions. The graph of the Consumer and Resource reservoirs should exhibit simple oscillatory behavior.
 
-G=1 D=20 Q=1 W=15 C_i=10 R_i=15
+g=1 d=20 q=1 w=15 c_i=10 r_i=15
 
 ```{r}
-Oscillation <- function(t, y, params) {
+oscillation_func <- function(t, y, params) { #use func or fn in function names
   with(as.list(c(y, params)), {
-    dC <- G * R - D
-    dR <- W - Q * C
+    dC <- g * R - d
+    dR <- w - q * C
     return(list(c(dC, dR)))
   })
 }
 
-parms <- c(G = 1, D = 20, Q = 1, W = 15)
+parms <- c(g = 1, d = 20, q = 1, w = 15) #change Variables to be more descriptive
 times <- seq(0, 25, by = .1)
-state <- c(C = 10, R = 15)
+state <- c(C = 10, R = 15) #Use lowercase for constants and capitalize State Vars
 
-output <- lsoda(state, times, Oscillation, parms)
+output <- lsoda(state, times, oscillation_func, parms)
 
 ggplot(as.data.frame(output)) +
   geom_line(aes(x = time, y = C)) +
-  labs(title = paste("Consumer Dynamics; Oranism Growth Rate = ", parms[1], "; Organism Death Rate = ", parms[2],
-                     "; Resource Consumption Rate = ", parms[3], "; Resource Growth Rate = ", parms[4]),
-       x = "Time (hours)", y = "Consumer (organisms)")
+  geom_line(aes(x = time, y = R), color = "red") +
+  labs(title = paste("Consumer Dynamics; Oranism Growth Rate = ", parms["G"], "; Organism Death Rate = ", parms["D"],
+                     "; Resource Consumption Rate = ", parms["Q"], "; Resource Growth Rate = ", parms["W"]),
+       x = "Time (Years)", y = "Consumer (organisms)")
 
 ggplot(as.data.frame(output)) +
-    geom_line(aes(x = time, y = R), color = "red") +
+    geom_path(aes(x = C, y = R), color = "red") +
     labs(title = paste("Consumer Dynamics; Oranism Growth Rate = ", parms[1], "; Organism Death Rate = ", parms[2],
                        "; Resource Consumption Rate = ", parms[3], "; Resource Growth Rate = ", parms[4]),
-         x = "Time (hours)", y = "Resource (units)")
+         x = "Consumer", y = "Resource (units)")
 ```
 
 
 a.What are the equilibrium values for the Consumer and Resource reservoirs? Note that the equilibrium values are those midpoint values around which each reservoir oscillates.
 
 Resource: 20, Consumer: 15
+(maybe play with first and second deriv to find eq point)
 
 b. What is the period of this system? (A period is the length of time it takes for the system to complete one full cycle).
 
-Period: 6 hours
+Period: 6 Years
 
 c. When is the first time that the Consumer reservoir reaches its equilibrium value in the simulation run? Where is the Resource reservoir in relationship to its equilibrium value during this same time? How does the level of the Resource affect the behavior of the Consumer from this point in time until the Consumer next reaches its equilibrium?
 
@@ -842,14 +844,14 @@ b. Which types of behavior patterns will your model exhibit (linear, exponential
 grViz("
 digraph oil_supply{
 
-    rankdir = 'LR'
+    rankdir = 'TB'
 
         node [shape = rectangle, style = filled, fillcolor = lightblue, fontsize = 15]
         FV [label = 'Fossil Fuel Vehicles'] #Units: number of Vehicles
         POS [label = 'Processed Oil Supply'] #Units: Liters
         URCO [label = 'Underground Reserves of Crude Oil'] #Units: Liters
 
-        node [shape = circle, fontsize = 10]
+        node [shape = oval, fontsize = 10]
         VProductionRate [label = 'Vehicle Production Rate'] #Num vehicles per L of oil per day
         VObsolescenceRate [label = 'Vehicle Obsolescence Rate'] #Number of vehicles per day
         OProdRate [label = 'Oil Production Rate'] #Liters per day
@@ -863,7 +865,7 @@ digraph oil_supply{
         
         subgraph v {
     // Add invisible nodes and edges to control ranking
-    { rank = same;
+    { node [rank = same]
       inv1 [style = invis];
       inv2 [style = invis];
       inv3 [style = invis];
@@ -884,7 +886,7 @@ digraph oil_supply{
 
   subgraph o {
     // Add invisible nodes and edges to control ranking
-    { rank = same;
+    { node [rank = same];
       inv4 [style = invis];
       inv5 [style = invis];
       inv6 [style = invis];
@@ -917,19 +919,19 @@ digraph oil_supply{
 ```
 
 ```{r}
-Oil <- function(t, y, params) {
+oil_func <- function(t, y, params) {
   with(as.list(c(y, params)), {
-    dFV <- (VProductionRate - (1-(POS/1e7)) * FV)
-    dPOS <- (OProdRate - (OConsRate)*FV)
-    dURCO <- -OProdRate
+    dFV <- (VProductionRate * (POS/POS_init) - VObsolescenceRate * FV)
+    dPOS <- (OProdRate * URCO - (OConsRate)*FV)
+    dURCO <- -OProdRate * URCO
     return(list(c(dFV, dPOS, dURCO)))
   })
 }
 
 times <- seq(0, 400, by = 1)
-state <- c(FV = 0, POS = 1e7, URCO = 1e8)
-parms <- c(VProductionRate = 1e4, VObsolescenceRate = 0.05, OProdRate = 1e5, OConsRate = 0.1)
-out <- ode(y = state, times = times, func = Oil, parms = parms)
+state <- c(FV = 10, POS = 1, URCO = 1)
+parms <- c(VProductionRate = 1, VObsolescenceRate = 0.05, OProdRate = 1, OConsRate = 0.1, POS_init = 1)
+out <- ode(y = state, times = times, func = oil_func, parms = parms)
 ggplot(as.data.frame(out)) +
   geom_line(aes(x = time, y = FV)) +
   labs(title = paste("Fossil Fuel Vehicle Dynamics; Vehicle Production Rate = ", parms[1], "; Vehicle Obsolescence Rate = ", parms[2],
@@ -947,4 +949,7 @@ ggplot(as.data.frame(out)) +
     labs(title = paste("Underground Reserves of Crude Oil Dynamics; Vehicle Production Rate = ", parms[1], "; Vehicle Obsolescence Rate = ", parms[2],
                          "; Oil Production Rate = ", parms[3], "; Oil Consumption Rate = ", parms[4]),
          x = "Time (days)", y = "Underground Reserves of Crude Oil (Liters)")
+
+ggplot(as.data.frame(out)) +
+  geom_path(aes(x = FV, y = POS))
 ```

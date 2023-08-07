@@ -1,25 +1,213 @@
+ ---
+title: "Model 2"
+output: html_notebook
+date: '2023-07-10'
 ---
-title: "R Notebook"
-output: html_document
----
 
-The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
-handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
-To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
+
 ```{r}
-
-```
-position the caret at any line or the code chunk, then click "+".
-
-The code chunk appears:
-```{r}
+library(deSolve)
+library(DiagrammeR)
+library(ggplot2)
+library(tidyverse)
 ```
 
-Type any R code in the chunk, for example:
+A lake ecosystem, home to many phosphorus-limited algae species, is threatened with a potential influx of inorganic phosphorus runoff from a local construction project. This phosphorus may enhance algae growth in the lake, thus reducing dissolved oxygen and increasing turbidity in the water. This will in turn create problems for the aquatic animals and bottom-dwelling plants living in the lake. A local planning authority has asked you to explore the impact on the lake's phosphorus cycle due to this potential inflow of inorganic phosphorus.
+
+# Definitions: 
+
+## Reservoirs:
+* Live_phos = living organic phosphorus (moles P)
+* Dead_phos = dead organic phosphorus (moles P)
+* Inorg_phos = inorganic phosphorus (moles P)
+
+## Rate constants:
+* k_up = uptake of inorganic phosphorus (1/yr/mole)
+* k_decomp = decomposition of dead organic phosphorus (1/yr)
+* k_death = death of living organic phosphorus (1/yr)
+
+## Flows:
+* P_uptake(k_up * Inorg_phos * Live_phos) = uptake of inorganic phosphorus(moles P / yr)
+* P_decomp(k_decomp * Dead_phos) = decomposition of dead organic phosphorus (moles P/yr)
+* P_death(k_death * Live_phos) = death of living organic phosphorus (moles P / yr)
+
+
+
 ```{r}
-mycars <- within(mtcars, { cyl <- ordered(cyl) })
-mycars
+#systems diagram
+grViz("
+        digraph flowchart {
+        layout = neato
+        overlap = false
+            node [shape = rectangle]
+            Inorg_phos
+            Live_phos
+            Dead_phos
+
+            node [shape = doublecircle]
+            P_uptake [label = 'P_uptake\n(moles/yr)']
+            P_decomp [label = 'P_decomp\n(moles/yr)']
+            P_death [label = 'P_death\n(moles/yr)']
+
+            Inorg_phos -> P_uptake [arrowhead = none]
+            P_uptake -> Live_phos
+            Live_phos -> P_death [arrowhead = none]
+            P_death -> Dead_phos
+            Dead_phos -> P_decomp [arrowhead = none]
+            P_decomp -> Inorg_phos
+        }")
+
+
 ```
 
-Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
-Click the **Knit and Open Document** to build and preview an output.
+#Model
+
+```{r}
+#definition of rate equations
+phosphorus.fns <- function(time, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    dLive_phos <- k_up * Inorg_phos * Live_phos - #uptake
+      k_death * Live_phos #death
+
+    dDead_phos <- k_death * Live_phos - #death
+      k_decomp * Dead_phos #decomposition
+
+    dInorg_phos <- k_decomp * Dead_phos - #decomposition
+      k_up * Inorg_phos * Live_phos #uptake
+
+      return(list(c(dLive_phos, dDead_phos, dInorg_phos)))
+  })
+}
+
+initial_state <- c(Live_phos = 0.2, Dead_phos = 1, Inorg_phos = 0.1)
+parameters <- c(k_up = 2.5, k_decomp = 0.05, k_death = 0.25)
+
+times <- seq(0, 100, by = 1) #run for 100 years
+
+#solve and store as dataframe
+solution <- ode(y = initial_state, times = times, func = phosphorus.fns, parms = parameters) %>%
+  as.data.frame()
+
+ggplot(solution, aes(x = time)) +
+  geom_line(aes(y = Live_phos, colour = "Live_phos")) +
+    geom_line(aes(y = Dead_phos, colour = "Dead_phos")) +
+    geom_line(aes(y = Inorg_phos, colour = "Inorg_phos")) +
+    labs(x = "Time (years)", y = "Phosphorus (moles P)", colour = "Legend")
+
+```
+
+#Sensitivity analysis
+
+```{r}
+
+#define base parameters and initial states
+initial_state <- c(Live_phos = 0.2, Dead_phos = 1, Inorg_phos = 0.1)
+base_parms <- c(k_up = 2.5, k_decomp = 0.05, k_death = 0.25)
+
+#solve and store base solution as dataframe
+base_solution <- lsoda(y = initial_state, times = times, func = phosphorus.fns, parms = base_parms) %>%
+  as.data.frame()
+
+#run model with perturb. on specified variable with designated perturb. factor
+run_model <- function(kick_var.char, perturbation_factor, parms = base_parms) {
+  #add if else to check if kick_var.char is in parms, if not run with kicked state
+  if (kick_var.char %in% names(parms)) {
+  #store base parms seperately for modificaion
+  parms1 <- parms
+  
+  #run model with positive kick to specified parameter
+  parms1[kick_var.char] <- parms1[kick_var.char] * (1 + perturbation_factor)
+  solution1 <- lsoda(y = initial_state, times = times, func = phosphorus.fns,
+                    parms = parms1) %>%
+    as.data.frame()
+  
+  solution1$kick_var <- kick_var.char #store kicked parm name
+  solution1$perturbation_factor <- perturbation_factor + 1 #store kick value
+
+  parms2 <- parms #reset parms to base values
+  
+  #run model with positive kick to specified parameter
+    parms2[kick_var.char] <- parms2[kick_var.char] * (1 - perturbation_factor)
+    solution2 <- lsoda(y = initial_state, times = times, func = phosphorus.fns,
+                        parms = parms2) %>%
+        as.data.frame()
+    
+    solution2$kick_var <- kick_var.char
+    solution2$perturbation_factor <- 1 - perturbation_factor
+    
+    #bind pushed and pulled solutions
+    solution <- rbind(solution1, solution2)
+  } else {
+    #run model with kicked state
+    initial_state1 <- initial_state
+    initial_state1[kick_var.char] <- initial_state1[kick_var.char] * (1 + perturbation_factor)
+    solution1 <- lsoda(y = initial_state1, times = times, func = phosphorus.fns,
+                       parms = parms) %>%
+      as.data.frame()
+
+    solution1$kick_var <- kick_var.char
+    solution1$perturbation_factor <- perturbation_factor + 1
+
+    initial_state2 <- initial_state
+    initial_state2[kick_var.char] <- initial_state2[kick_var.char] * (1 - perturbation_factor)
+    solution2 <- lsoda(y = initial_state2, times = times, func = phosphorus.fns,
+                       parms = parms) %>%
+      as.data.frame()
+
+    solution2$kick_var <- kick_var.char
+    solution2$perturbation_factor <- 1 - perturbation_factor
+
+    solution <- rbind(solution1, solution2)
+  }
+    
+  return(solution)
+}
+
+out.df <- data.frame(kick_var2 = c("k_up", "k_decomp","Live_phos", "Dead_phos", "Inorg_phos")) %>%
+  reframe(sim = run_model(kick_var.char = kick_var2, perturbation_factor = 0.5),
+          .by = kick_var2) %>%
+  unnest(sim) %>%
+  #bind_rows(base_solution) %>% 
+  mutate(perturb_factor = case_when(perturbation_factor == 0.5~"lower", perturbation_factor == 1.5~"upper", TRUE~"unknown")) %>%
+  select(-perturbation_factor)%>%#^ change name of perturbation factor to prevent scoping issue
+  pivot_longer(cols = c("Live_phos", "Dead_phos", "Inorg_phos"), names_to = "phos_type") %>%
+  pivot_wider(names_from = perturb_factor, values_from = value)
+
+ggplot(out.df %>%
+         filter(phos_type == "Live_phos")) +
+  geom_ribbon(aes(x = time, ymax = upper, ymin = lower, fill = kick_var), alpha = 0.6) +
+  geom_line(aes(x = time, y = upper), color = "red") + 
+  geom_line(aes(x = time, y = lower), color = "blue") +
+  geom_line(data = base_solution, aes(x = time, y = Live_phos)) +
+  labs(y = "Moles Live Phosphorus") +
+  facet_wrap(~kick_var, scales = "free")
+
+ggplot(out.df %>%
+  filter(phos_type == "Dead_phos")) + 
+  geom_ribbon(aes(x = time, ymax = upper, ymin = lower, fill = kick_var), alpha = 0.6) +
+  geom_line(aes(x = time, y = upper), color = "red") + 
+  geom_line(aes(x = time, y = lower), color = "blue") +
+  geom_line(data = base_solution, aes(x = time, y = Dead_phos)) +
+   labs(y = "Moles Dead Phosphorus") +
+  facet_wrap(~kick_var, scales = "free")
+
+ggplot(out.df %>%
+  filter(phos_type == "Inorg_phos")) + 
+  geom_ribbon(aes(x = time, ymax = upper, ymin = lower, fill = kick_var), alpha = 0.6) +
+  geom_line(aes(x = time, y = upper), color = "red") + 
+  geom_line(aes(x = time, y = lower), color = "blue") +
+  geom_line(data = base_solution, aes(x = time, y = Inorg_phos)) +
+   labs(y = "Moles Inorganic Phosphorus") +
+  facet_wrap(~kick_var, scales = "free")
+
+#include legends for Upper and Lower colors
+```
+
+
+#Conclusions
+
+Inorganic Phosphors:
+- This pool is the most stable and is only perturbed from its steady state if the uptake kinetic is modified (which could be caused by eutrophication). For this reason, the quantity of bio-matter in the lake system would need to monitered and maintained closely in order to prevent runaway behavior.
+
+Dead Phosphorus:
+- This pool is very easily disturbed from steady state. Due to the fact that oxygen shortage in the system is cause by the decomposition of dead bio-matter to inorganic matter, any modification that minimizes dead biomater would be worth investigation.

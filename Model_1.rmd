@@ -1,22 +1,171 @@
----
-title: "R Notebook"
+ ---
+title: "Model 1"
 output: html_notebook
+date: '2023-07-10'
 ---
 
-The [R plugin](https://www.jetbrains.com/help/pycharm/r-plugin-support.html) for IntelliJ-based IDEs provides
-handy capabilities to work with the [R Markdown](https://www.jetbrains.com/help/pycharm/r-markdown.html) files.
-To [add](https://www.jetbrains.com/help/pycharm/r-markdown.html#add-code-chunk) a new R chunk,
-position the caret at any line or the code chunk, then click "+".
-
-The code chunk appears:
 ```{r}
+library(deSolve)
+library(DiagrammeR)
+library(ggplot2)
+library(tidyverse)
 ```
 
-Type any R code in the chunk, for example:
+Problem 4.1 You are a wildlife manager conducting a program to reintroduce red wolves into a major wildlife refuge. Although once native to the area, these wolves were eliminated decades ago by hunters, farmers, and developers. The wolves' primary source of food is deer, of which the refuge has a large population. You would like to explore how the deer and wolf populations might interact and the impacts this interaction might have on the future populations of both species.
+
+N_deer 'N(t)' - deer population (individuals)
+birth_r 'r' - deer birth rate (individuals/individual/year)
+deer_cap 'K' - carrying capacity of deer (deer)
+pred_eff 'c' - predator efficiency (deer/deer/wolf/year)
+N_wolf - wolf population (individuals)
+wolf_death 'Wd' - natural wolf death rate (wolves/individual/year)
+wolf_birth_eff 'p' - wolf birth efficiency (wolf/deer/year/wolf)
+
 ```{r}
-mycars <- within (mtcars, {cyl <- ordered (cyl)})
-mycars
+#definition of rate equations
+population.fns <- function(time, state, parameters) {
+with(as.list(c(state, parameters)), {
+  
+    dN_deer <- birth_r*(1 - N_deer/deer_cap) * N_deer -
+      pred_eff * N_wolf * N_deer
+    
+    dN_wolf <- wolf_birth_eff * N_wolf * N_deer -
+      wolf_death * N_wolf
+    
+    return(list(c(dN_deer, dN_wolf)))
+  })
+}
+
+#define initial states and default parameters
+initial_state <- c(N_deer = 500, N_wolf = 25)
+parameters <- c(birth_r = 0.25, deer_cap = 4000, pred_eff = 0.005,
+                wolf_death = 0.3, wolf_birth_eff = 0.001)
+
+times <- seq(0, 100, by = 1) #run for 100 years
+
+#solve and store as dataframe
+solution <- lsoda(y = initial_state, times = times, func = population.fns,
+                  parms = parameters) %>%
+    as.data.frame()
+
+#plot polulations against time to observe changes
+ggplot(solution, aes(x = time)) +
+  geom_line(aes(y = N_deer, color = "Deer")) +
+  geom_line(aes(y = N_wolf, color = "Wolf")) +
+  labs(x = "Time(years)", y = "Population", color = "Species") +
+  theme_bw()
+
 ```
 
-Now, click the **Run** button on the chunk toolbar to [execute](https://www.jetbrains.com/help/pycharm/r-markdown.html#run-r-code) the chunk code. The result should be placed under the chunk.
-Click the **Knit and Open Document** to build and preview an output.
+
+
+
+```{r}
+#sensitivity analysis
+
+#define base parameters and initial states
+initial_state <- c(N_deer = 500, N_wolf = 25)
+base_parms <- c(birth_r = 0.25, deer_cap = 4000, pred_eff = 0.005,
+                wolf_death = 0.3, wolf_birth_eff = 0.001)
+
+#solve and store base solution as dataframe
+base_solution <- lsoda(y = initial_state, times = times, func = population.fns, parms = base_parms) %>%
+  as.data.frame()
+
+#run model with perturb. on specified variable with designated perturb. factor
+run_model <- function(kick_var.char, perturbation_factor, parms = base_parms) {
+  #add if else to check if kick_var.char is in parms, if not run with kicked state
+  if (kick_var.char %in% names(parms)) {
+  #store base parms seperately for modificaion
+  parms1 <- parms
+  
+  #run model with positive kick to specified parameter
+  parms1[kick_var.char] <- parms1[kick_var.char] * (1 + perturbation_factor)
+  solution1 <- lsoda(y = initial_state, times = times, func = population.fns,
+                    parms = parms1) %>%
+    as.data.frame()
+  
+  solution1$kick_var <- kick_var.char #store kicked parm name
+  solution1$perturbation_factor <- perturbation_factor + 1 #store kick value
+
+  parms2 <- parms #reset parms to base values
+  
+  #run model with positive kick to specified parameter
+    parms2[kick_var.char] <- parms2[kick_var.char] * (1 - perturbation_factor)
+    solution2 <- lsoda(y = initial_state, times = times, func = population.fns,
+                        parms = parms2) %>%
+        as.data.frame()
+    
+    solution2$kick_var <- kick_var.char
+    solution2$perturbation_factor <- 1 - perturbation_factor
+    
+    #bind pushed and pulled solutions
+    solution <- rbind(solution1, solution2)
+  } else {
+    #run model with kicked state
+    initial_state1 <- initial_state
+    initial_state1[kick_var.char] <- initial_state1[kick_var.char] * (1 + perturbation_factor)
+    solution1 <- lsoda(y = initial_state1, times = times, func = population.fns,
+                       parms = parms) %>%
+      as.data.frame()
+
+    solution1$kick_var <- kick_var.char
+    solution1$perturbation_factor <- perturbation_factor + 1
+
+    initial_state2 <- initial_state
+    initial_state2[kick_var.char] <- initial_state2[kick_var.char] * (1 - perturbation_factor)
+    solution2 <- lsoda(y = initial_state2, times = times, func = population.fns,
+                       parms = parms) %>%
+      as.data.frame()
+
+    solution2$kick_var <- kick_var.char
+    solution2$perturbation_factor <- 1 - perturbation_factor
+
+    solution <- rbind(solution1, solution2)
+  }
+    
+  return(solution)
+}
+
+out.df <- data.frame(kick_var2 = c("birth_r", "deer_cap", "pred_eff", "wolf_death", "wolf_birth_eff", "N_deer", "N_wolf")) %>%
+  reframe(sim = run_model(kick_var.char = kick_var2, perturbation_factor = 0.5),
+          .by = kick_var2) %>%
+  unnest(sim) %>%
+  #bind_rows(base_solution) %>% 
+  mutate(perturbation_factor = case_when(perturbation_factor == 0.5~"lower", perturbation_factor == 1.5~"upper", TRUE~"unknown"))%>%
+  #^ change name of perturbation factor to prevent scoping issue
+  pivot_longer(cols = c("N_deer", "N_wolf"), names_to = "species") %>%
+  pivot_wider(names_from = perturbation_factor, values_from = value)
+
+ggplot(out.df %>%
+         filter(species == "N_deer")) +
+  geom_ribbon(aes(x = time, ymax = upper, ymin = lower, fill = kick_var), alpha = 0.6) +
+  geom_line(aes(x = time, y = upper), color = "red") + 
+  geom_line(aes(x = time, y = lower), color = "blue") +
+  geom_line(data = base_solution, aes(x = time, y = N_deer)) +
+  labs(y = "Individuals") +
+  facet_wrap(~kick_var, scales = "free")
+
+ggplot(out.df %>%
+  filter(species == "N_wolf")) + 
+  geom_ribbon(aes(x = time, ymax = upper, ymin = lower, fill = kick_var), alpha = 0.6) +
+  geom_line(aes(x = time, y = upper), color = "red") + 
+  geom_line(aes(x = time, y = lower), color = "blue") +
+  geom_line(data = base_solution, aes(x = time, y = N_wolf)) +
+   labs(y = "Individuals") +
+  facet_wrap(~kick_var, scales = "free")
+
+```
+
+Conclusion:  
+
+Observations of the deer population
+- Lowered wolf_birth_eff (the constant determining how a successful kill is translated into wolf population growth) maintained a larger and less volatile deer population. If resources can sustain this population size, this would mean deer are not over-hunted
+- Increased wolf_death (natural rate of wolf death) also resulted in a larger, steadier deer population
+
+Observations of the wolf population
+- Increased predator efficiency resulted in a smaller, stabler wolf population
+- Lowered wolf_birth_eff resulted in a more stable wolf population
+- Increased wolf_death resulted in a more stable polulation
+
+(discuss minimizing deer population)
