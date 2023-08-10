@@ -166,6 +166,5 @@ Observations of the deer population
 Observations of the wolf population
 - Increased predator efficiency resulted in a smaller, stabler wolf population
 - Lowered wolf_birth_eff resulted in a more stable wolf population
-- Increased wolf_death resulted in a more stable polulation
+- Increased wolf_death resulted in a more stable population
 
-(discuss minimizing deer population)

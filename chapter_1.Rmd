@@ -230,6 +230,7 @@ result[1] <- P
 for (i in 2:8) {
   result[i] <- people(result[i-1], Birth, Death, dt)
 }
+
 result
 #plot the results
 plot(result, type = "l", xlab = "Time (years)", ylab = "People", xlim = c(1, 8))

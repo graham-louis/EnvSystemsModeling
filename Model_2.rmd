@@ -200,7 +200,6 @@ ggplot(out.df %>%
    labs(y = "Moles Inorganic Phosphorus") +
   facet_wrap(~kick_var, scales = "free")
 
-#include legends for Upper and Lower colors
 ```
 
 

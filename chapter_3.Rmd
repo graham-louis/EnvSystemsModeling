@@ -320,20 +320,3 @@ parameters <- parameters_base %>%
 
 
 ```
-
-Section 3.6
-12. Modify the model CHAP3a.STM to model the first intervention (repeated capture and removal of infected fish). Assume that this policy is instituted 50 days after the beginning of the simulation and that it results in doubling the Fatality Rate. Briefly summarize what impact this intervention has on the system. Would you recommend this approach to curbing the disease? Why or why not?
-
-
-
-13. Modify the model in CHAP3a.STM to run the "best case" analysis of the second intervention (introducing a more resistant strain of fish for which the infectiousness of disease X is 50% lower). Based on the results of the "best case" analysis, state whether you would recommend any further eval- uation of the second intervention.
-
-
-
-14. Modify the CHAP3a.STM system diagram to show how you would simulate a gradual introduction of 40 of the more resistant fish per year. (Hint: you will need to add a new series of reservoirs to keep track of the more resistant fish.)
-
-
-
-15. Formulate one other realistic intervention for addressing the disease X epidemic. Briefly describe the intervention. Modify CHAP3a.STM and make some simulation runs to evaluate your idea.
-
-
